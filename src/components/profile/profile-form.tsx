@@ -28,7 +28,7 @@ export default function ProfileForm({ name, bio, avatarUrl, isPrivate }: Props) 
   const displayUrl = preview ?? avatarUrl;
 
   return (
-    <form action={action} encType="multipart/form-data" className="space-y-4">
+    <form action={action} className="space-y-4">
       <div className="flex items-center gap-4">
         <div className="w-20 h-20 rounded-full overflow-hidden bg-muted border shrink-0 flex items-center justify-center">
           {displayUrl ? (

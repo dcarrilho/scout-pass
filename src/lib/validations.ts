@@ -44,7 +44,15 @@ const yearField = (label: string) =>
     .refine((y) => y >= 1900 && y <= new Date().getFullYear() + 1, { message: `${label} inválido.` });
 
 const optionalYearField = () =>
-  z.union([z.literal(""), z.string().regex(/^\d{4}$/).transform(Number)]).optional();
+  z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z
+      .string()
+      .regex(/^\d{4}$/, { message: "Ano inválido (ex: 2020)." })
+      .transform(Number)
+      .refine((y) => y >= 1900 && y <= new Date().getFullYear() + 1, { message: "Ano inválido." })
+      .optional()
+  );
 
 export const MotorcycleSchema = z.object({
   brand: z.string().min(1, { message: "Marca é obrigatória." }).trim(),
