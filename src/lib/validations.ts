@@ -36,31 +36,33 @@ export const EditAccountSchema = z.object({
   email: z.string().email({ message: "E-mail inválido." }).trim(),
 });
 
+const yearField = (label: string) =>
+  z
+    .string()
+    .regex(/^\d{4}$/, { message: `${label} inválido (ex: 2020).` })
+    .transform(Number)
+    .refine((y) => y >= 1900 && y <= new Date().getFullYear() + 1, { message: `${label} inválido.` });
+
+const optionalYearField = () =>
+  z.union([z.literal(""), z.string().regex(/^\d{4}$/).transform(Number)]).optional();
+
 export const MotorcycleSchema = z.object({
   brand: z.string().min(1, { message: "Marca é obrigatória." }).trim(),
   model: z.string().min(1, { message: "Modelo é obrigatório." }).trim(),
-  year: z
-    .string()
-    .regex(/^\d{4}$/, { message: "Ano inválido." })
-    .transform(Number)
-    .refine((y) => y >= 1900 && y <= new Date().getFullYear() + 1, { message: "Ano inválido." }),
+  year: yearField("Ano"),
   license_plate: z.string().max(10).trim().optional(),
-  owned_from: z.string().optional(),
-  owned_until: z.string().optional(),
+  owned_from: optionalYearField(),
+  owned_until: optionalYearField(),
 });
 
 export const MotorcycleEditSchema = z.object({
   id: z.string().min(1),
   brand: z.string().min(1, { message: "Marca é obrigatória." }).trim(),
   model: z.string().min(1, { message: "Modelo é obrigatório." }).trim(),
-  year: z
-    .string()
-    .regex(/^\d{4}$/, { message: "Ano inválido." })
-    .transform(Number)
-    .refine((y) => y >= 1900 && y <= new Date().getFullYear() + 1, { message: "Ano inválido." }),
+  year: yearField("Ano"),
   license_plate: z.string().max(10).trim().optional(),
-  owned_from: z.string().optional(),
-  owned_until: z.string().optional(),
+  owned_from: optionalYearField(),
+  owned_until: optionalYearField(),
 });
 
 export type SignupFormState =

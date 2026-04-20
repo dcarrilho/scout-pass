@@ -13,25 +13,20 @@ type Motorcycle = {
   model: string;
   year: number;
   license_plate: string | null;
-  owned_from: Date | null;
-  owned_until: Date | null;
+  owned_from: number | null;
+  owned_until: number | null;
   is_active: boolean;
 };
 
-function toDateInput(d: Date | null) {
-  if (!d) return "";
-  return new Date(d).toISOString().slice(0, 10);
-}
-
-function formatPeriod(from: Date | null, until: Date | null) {
-  const fmt = (d: Date) => new Date(d).toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
-  if (from && until) return `${fmt(from)} → ${fmt(until)}`;
-  if (from) return `desde ${fmt(from)}`;
+function formatPeriod(from: number | null, until: number | null) {
+  if (from && until) return `${from} → ${until}`;
+  if (from && !until) return `desde ${from} · atual`;
   return null;
 }
 
 function MotorcycleItem({ moto }: { moto: Motorcycle }) {
   const [editing, setEditing] = useState(false);
+  const [isCurrentMoto, setIsCurrentMoto] = useState(moto.owned_until === null && moto.owned_from !== null);
   const [state, action, pending] = useActionState<MotorcycleEditFormState, FormData>(editMotorcycle, undefined);
 
   useEffect(() => {
@@ -45,7 +40,7 @@ function MotorcycleItem({ moto }: { moto: Motorcycle }) {
       <li className="rounded-xl border bg-card p-4 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold">{moto.brand} {moto.model}</span>
               <span className="text-sm text-muted-foreground">{moto.year}</span>
               {moto.is_active && (
@@ -89,23 +84,40 @@ function MotorcycleItem({ moto }: { moto: Motorcycle }) {
         </div>
         <div className="space-y-1">
           <Label htmlFor={`year-${moto.id}`}>Ano</Label>
-          <Input id={`year-${moto.id}`} name="year" defaultValue={String(moto.year)} maxLength={4} required />
+          <Input id={`year-${moto.id}`} name="year" defaultValue={String(moto.year)} placeholder="2022" maxLength={4} required />
           {state?.errors?.year && <p className="text-xs text-destructive">{state.errors.year[0]}</p>}
         </div>
         <div className="space-y-1">
-          <Label htmlFor={`plate-${moto.id}`}>Placa <span className="text-muted-foreground">(privado)</span></Label>
+          <Label htmlFor={`plate-${moto.id}`}>Placa <span className="text-muted-foreground text-xs">(privado)</span></Label>
           <Input id={`plate-${moto.id}`} name="license_plate" defaultValue={moto.license_plate ?? ""} placeholder="ABC-1234" maxLength={10} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label htmlFor={`from-${moto.id}`}>Proprietário desde</Label>
-            <Input id={`from-${moto.id}`} name="owned_from" type="date" defaultValue={toDateInput(moto.owned_from)} />
+            <Input id={`from-${moto.id}`} name="owned_from" defaultValue={moto.owned_from ? String(moto.owned_from) : ""} placeholder="2020" maxLength={4} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor={`until-${moto.id}`}>Até</Label>
-            <Input id={`until-${moto.id}`} name="owned_until" type="date" defaultValue={toDateInput(moto.owned_until)} />
+            <Label htmlFor={`until-${moto.id}`} className={isCurrentMoto ? "text-muted-foreground" : ""}>Até</Label>
+            <Input
+              id={`until-${moto.id}`}
+              name="owned_until"
+              defaultValue={moto.owned_until ? String(moto.owned_until) : ""}
+              placeholder="2023"
+              maxLength={4}
+              disabled={isCurrentMoto}
+              required={!isCurrentMoto && !!moto.owned_from}
+            />
           </div>
         </div>
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isCurrentMoto}
+            onChange={(e) => setIsCurrentMoto(e.target.checked)}
+            className="rounded"
+          />
+          <span className="text-sm">Moto atual</span>
+        </label>
         {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
         <div className="flex gap-2">
           <Button type="submit" size="sm" disabled={pending}>{pending ? "Salvando..." : "Salvar"}</Button>
@@ -120,6 +132,8 @@ type Props = { motorcycles: Motorcycle[] };
 
 export default function MotorcycleForm({ motorcycles }: Props) {
   const [state, action, pending] = useActionState(addMotorcycle, undefined);
+  const [isCurrentMoto, setIsCurrentMoto] = useState(true);
+  const [hasFrom, setHasFrom] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -148,19 +162,41 @@ export default function MotorcycleForm({ motorcycles }: Props) {
           {state?.errors?.year && <p className="text-xs text-destructive">{state.errors.year[0]}</p>}
         </div>
         <div className="space-y-1">
-          <Label htmlFor="license_plate">Placa <span className="text-muted-foreground">(privado, opcional)</span></Label>
+          <Label htmlFor="license_plate">Placa <span className="text-muted-foreground text-xs">(privado, opcional)</span></Label>
           <Input id="license_plate" name="license_plate" placeholder="ABC-1234" maxLength={10} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label htmlFor="owned_from">Proprietário desde</Label>
-            <Input id="owned_from" name="owned_from" type="date" />
+            <Input
+              id="owned_from"
+              name="owned_from"
+              placeholder="2020"
+              maxLength={4}
+              onChange={(e) => setHasFrom(e.target.value.length === 4)}
+            />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="owned_until">Até</Label>
-            <Input id="owned_until" name="owned_until" type="date" />
+            <Label htmlFor="owned_until" className={isCurrentMoto ? "text-muted-foreground" : ""}>Até</Label>
+            <Input
+              id="owned_until"
+              name="owned_until"
+              placeholder="2023"
+              maxLength={4}
+              disabled={isCurrentMoto}
+              required={!isCurrentMoto && hasFrom}
+            />
           </div>
         </div>
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isCurrentMoto}
+            onChange={(e) => setIsCurrentMoto(e.target.checked)}
+            className="rounded"
+          />
+          <span className="text-sm">Moto atual</span>
+        </label>
         {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
         <Button type="submit" variant="outline" disabled={pending}>
           {pending ? "Adicionando..." : "Adicionar moto"}

@@ -74,8 +74,8 @@ model Motorcycle {
   model         String
   year          Int
   license_plate String?
-  owned_from    DateTime?
-  owned_until   DateTime?
+  owned_from    Int?
+  owned_until   Int?
   is_active     Boolean   @default(true)
   checkins      CheckIn[]
   created_at    DateTime  @default(now())

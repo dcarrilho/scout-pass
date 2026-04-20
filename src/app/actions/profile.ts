@@ -120,8 +120,8 @@ export async function addMotorcycle(
       model: validated.data.model,
       year: validated.data.year,
       license_plate: validated.data.license_plate ?? null,
-      owned_from: validated.data.owned_from ? new Date(validated.data.owned_from) : null,
-      owned_until: validated.data.owned_until ? new Date(validated.data.owned_until) : null,
+      owned_from: (validated.data.owned_from as number | undefined) ?? null,
+      owned_until: (validated.data.owned_until as number | undefined) ?? null,
     },
   });
 
@@ -156,8 +156,8 @@ export async function editMotorcycle(
       model: validated.data.model,
       year: validated.data.year,
       license_plate: validated.data.license_plate ?? null,
-      owned_from: validated.data.owned_from ? new Date(validated.data.owned_from) : null,
-      owned_until: validated.data.owned_until ? new Date(validated.data.owned_until) : null,
+      owned_from: (validated.data.owned_from as number | undefined) ?? null,
+      owned_until: (validated.data.owned_until as number | undefined) ?? null,
     },
   });
 
