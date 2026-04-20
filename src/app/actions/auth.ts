@@ -35,7 +35,7 @@ export async function signup(state: SignupFormState, formData: FormData): Promis
     data: { name, username, email, password: hashedPassword },
   });
 
-  await createSession(user.id);
+  await createSession(user.id, user.role);
   redirect("/home");
 }
 
@@ -63,7 +63,7 @@ export async function login(state: LoginFormState, formData: FormData): Promise<
     return { message: "E-mail ou senha incorretos." };
   }
 
-  await createSession(user.id);
+  await createSession(user.id, user.role);
   redirect("/home");
 }
 

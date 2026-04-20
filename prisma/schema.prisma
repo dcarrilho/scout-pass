@@ -7,26 +7,105 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum ChallengeType {
+  VALENTE
+  BANDEIRANTE
+  CARDEAL
+  RODOVIARIO
+  LENDARIO
+}
+
+enum TargetType {
+  CITY
+  WAYPOINT
+  LANDMARK
+  BORDER
+}
+
+enum CheckInStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
-  id          String       @id @default(cuid())
-  name        String
-  username    String       @unique
-  email       String       @unique
-  password    String
-  bio         String?
-  avatar_url  String?
-  motorcycles Motorcycle[]
-  created_at  DateTime     @default(now())
-  updated_at  DateTime     @updatedAt
+  id                String       @id @default(cuid())
+  name              String
+  username          String       @unique
+  email             String       @unique
+  password          String
+  bio               String?
+  avatar_url        String?
+  role              Role         @default(USER)
+  motorcycles       Motorcycle[]
+  checkins          CheckIn[]
+  reviewed_checkins CheckIn[]    @relation("ReviewedCheckIns")
+  created_at        DateTime     @default(now())
+  updated_at        DateTime     @updatedAt
 }
 
 model Motorcycle {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   user_id    String
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   brand      String
   model      String
   year       Int
-  is_active  Boolean  @default(true)
-  created_at DateTime @default(now())
+  is_active  Boolean   @default(true)
+  checkins   CheckIn[]
+  created_at DateTime  @default(now())
+}
+
+model Challenge {
+  id          String            @id @default(cuid())
+  name        String
+  type        ChallengeType
+  description String?
+  state_code  String?
+  is_active   Boolean           @default(true)
+  targets     ChallengeTarget[]
+  checkins    CheckIn[]
+  created_at  DateTime          @default(now())
+}
+
+model ChallengeTarget {
+  id           String     @id @default(cuid())
+  challenge_id String
+  challenge    Challenge  @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+  name         String
+  latitude     Float?
+  longitude    Float?
+  order        Int        @default(0)
+  type         TargetType @default(CITY)
+  checkins     CheckIn[]
+  created_at   DateTime   @default(now())
+}
+
+model CheckIn {
+  id               String        @id @default(cuid())
+  user_id          String
+  user             User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  challenge_id     String
+  challenge        Challenge     @relation(fields: [challenge_id], references: [id])
+  target_id        String
+  target           ChallengeTarget @relation(fields: [target_id], references: [id])
+  motorcycle_id    String?
+  motorcycle       Motorcycle?   @relation(fields: [motorcycle_id], references: [id])
+  photo_url        String
+  exif_latitude    Float?
+  exif_longitude   Float?
+  exif_taken_at    DateTime?
+  declared_target  String?
+  status           CheckInStatus @default(PENDING)
+  rejection_reason String?
+  reviewed_by      String?
+  reviewer         User?         @relation("ReviewedCheckIns", fields: [reviewed_by], references: [id])
+  reviewed_at      DateTime?
+  submitted_at     DateTime      @default(now())
 }

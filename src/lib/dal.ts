@@ -12,5 +12,15 @@ export const verifySession = cache(async () => {
     redirect("/login");
   }
 
-  return { isAuth: true, userId: session.userId };
+  return { isAuth: true, userId: session.userId, role: session.role };
+});
+
+export const verifyModerator = cache(async () => {
+  const session = await verifySession();
+
+  if (session.role !== "MODERATOR" && session.role !== "ADMIN") {
+    redirect("/home");
+  }
+
+  return session;
 });
