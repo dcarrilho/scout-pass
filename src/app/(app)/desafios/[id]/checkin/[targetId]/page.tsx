@@ -13,7 +13,7 @@ export default async function CheckInPage({ params }: Props) {
   const [challenge, target, motorcycles] = await Promise.all([
     prisma.challenge.findUnique({ where: { id } }),
     prisma.challengeTarget.findUnique({ where: { id: targetId } }),
-    prisma.motorcycle.findMany({ where: { user_id: session.userId }, orderBy: { is_active: "desc" } }),
+    prisma.motorcycle.findMany({ where: { user_id: session.userId, owned_until: null }, orderBy: { owned_from: "desc" } }),
   ]);
 
   if (!challenge || !target) notFound();
