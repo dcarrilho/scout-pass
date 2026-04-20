@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Settings } from "lucide-react";
+import { Settings, LogOut } from "lucide-react";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
+import { logout } from "@/app/actions/auth";
 import FollowButton from "@/components/social/follow-button";
 
 type Props = { params: Promise<{ username: string }> };
@@ -52,15 +53,23 @@ export default async function PerfilPage({ params }: Props) {
   return (
     <main className="min-h-screen max-w-lg mx-auto">
       <div className="p-4 pt-6 space-y-5">
-        {/* Edit button */}
+        {/* Owner actions */}
         {isOwner && (
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-1">
             <Link
               href="/perfil/editar"
               className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <Settings className="size-5" />
             </Link>
+            <form action={logout}>
+              <button
+                type="submit"
+                className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+              >
+                <LogOut className="size-5" />
+              </button>
+            </form>
           </div>
         )}
 
