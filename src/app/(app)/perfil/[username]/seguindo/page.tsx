@@ -29,10 +29,10 @@ export default async function SeguindoPage({ params }: Props) {
 
   return (
     <main className="min-h-screen max-w-lg mx-auto">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center gap-3">
-        <Link href={`/perfil/${username}`} className="text-muted-foreground hover:text-foreground">←</Link>
-        <h1 className="text-lg font-bold">{user.name} segue</h1>
-      </header>
+      <div className="px-4 pt-4 pb-2 flex items-center gap-3">
+        <Link href={`/perfil/${username}`} className="text-muted-foreground hover:text-foreground font-medium">←</Link>
+        <h1 className="text-base font-bold">{user.name} segue</h1>
+      </div>
 
       <div className="p-4">
         {following.length === 0 ? (

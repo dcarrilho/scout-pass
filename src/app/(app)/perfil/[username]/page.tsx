@@ -47,16 +47,7 @@ export default async function PerfilPage({ params }: Props) {
 
   return (
     <main className="min-h-screen max-w-lg mx-auto">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center gap-3">
-        <h1 className="text-lg font-bold flex-1 truncate">@{user.username}</h1>
-        {isOwner && (
-          <Link href="/perfil/editar" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            Editar
-          </Link>
-        )}
-      </header>
-
-      <div className="p-4 space-y-5">
+      <div className="p-4 pt-6 space-y-5">
         {/* Avatar + info */}
         <div className="flex items-center gap-4">
           <div className="relative w-20 h-20 rounded-full overflow-hidden bg-muted border-2 shrink-0">
@@ -69,7 +60,7 @@ export default async function PerfilPage({ params }: Props) {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-bold truncate">{user.name}</h2>
               {user.is_private && <span className="text-muted-foreground text-sm">🔒</span>}
             </div>

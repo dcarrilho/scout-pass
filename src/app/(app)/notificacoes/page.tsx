@@ -24,11 +24,7 @@ export default async function NotificacoesPage() {
 
   return (
     <main className="min-h-screen max-w-lg mx-auto">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 py-3">
-        <h1 className="text-lg font-bold">Notificações</h1>
-      </header>
-
-      <div className="p-4 space-y-6">
+      <div className="p-4 pt-6 space-y-6">
         {empty && (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
             <span className="text-5xl">🔔</span>

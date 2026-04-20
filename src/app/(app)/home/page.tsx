@@ -1,47 +1,22 @@
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
-import Image from "next/image";
-import Link from "next/link";
-import { Search } from "lucide-react";
 
 export default async function HomePage() {
   const session = await verifySession();
 
-  const [user, recentCheckIns] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.userId },
-      select: { name: true, username: true, avatar_url: true },
-    }),
-    prisma.checkIn.findMany({
-      where: { status: "APPROVED" },
-      include: {
-        user: { select: { name: true, username: true, avatar_url: true } },
-        challenge: { select: { name: true } },
-        target: { select: { name: true } },
-      },
-      orderBy: { reviewed_at: "desc" },
-      take: 20,
-    }),
-  ]);
+  const recentCheckIns = await prisma.checkIn.findMany({
+    where: { status: "APPROVED" },
+    include: {
+      user: { select: { name: true, username: true, avatar_url: true } },
+      challenge: { select: { name: true } },
+      target: { select: { name: true } },
+    },
+    orderBy: { reviewed_at: "desc" },
+    take: 20,
+  });
 
   return (
     <main className="max-w-lg mx-auto">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center justify-between">
-        <span className="text-lg font-bold tracking-tight">ScoutPass</span>
-        <div className="flex items-center gap-2">
-          <Link href="/buscar" className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-            <Search className="size-5" />
-          </Link>
-          <Link href={`/perfil/${user?.username}`} className="w-9 h-9 rounded-full bg-muted border overflow-hidden shrink-0 flex items-center justify-center">
-            {user?.avatar_url ? (
-              <Image src={user.avatar_url} alt="" width={36} height={36} className="object-cover w-full h-full" />
-            ) : (
-              <span className="text-sm font-semibold">{user?.name[0]?.toUpperCase()}</span>
-            )}
-          </Link>
-        </div>
-      </header>
-
       <div className="py-4 px-4 space-y-5">
         {recentCheckIns.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
@@ -90,10 +65,8 @@ function FeedCard({ checkin }: {
             : ""}
         </span>
       </div>
-
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={checkin.photo_url} alt="Check-in" className="w-full aspect-[4/3] object-cover" />
-
       <div className="px-4 py-2.5">
         <span className="text-xs font-medium bg-muted rounded-full px-3 py-1 text-muted-foreground">
           ✅ {checkin.challenge.name}

@@ -38,10 +38,9 @@ export default async function BuscarPage({ searchParams }: Props) {
 
   return (
     <main className="min-h-screen max-w-lg mx-auto">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 py-3">
-        <h1 className="text-lg font-bold mb-3">Buscar</h1>
+      <div className="px-4 pt-4 pb-2">
         <SearchInput defaultValue={query} />
-      </header>
+      </div>
 
       <div className="p-4">
         {query.length > 0 && query.length < 2 && (

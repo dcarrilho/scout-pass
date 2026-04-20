@@ -49,11 +49,7 @@ export default async function DesafiosPage() {
 
   return (
     <main className="min-h-screen max-w-2xl mx-auto">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 py-3">
-        <h1 className="text-lg font-bold">Desafios</h1>
-      </header>
-
-      <div className="p-4 space-y-8">
+      <div className="p-4 pt-6 space-y-8">
         {TYPE_ORDER.filter((t) => grouped[t]).map((type) => {
           const config = TYPE_CONFIG[type] ?? { label: type, icon: "🏆", progressColor: "bg-primary", badgeClass: "", headerClass: "" };
           const list = grouped[type];

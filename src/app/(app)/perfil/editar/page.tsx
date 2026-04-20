@@ -19,14 +19,7 @@ export default async function EditarPerfilPage() {
 
   return (
     <main className="min-h-screen max-w-lg mx-auto">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center justify-between">
-        <h1 className="text-lg font-bold">Editar perfil</h1>
-        <Link href={`/perfil/${user.username}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
-          Ver perfil
-        </Link>
-      </header>
-
-      <div className="p-4 space-y-6">
+      <div className="p-4 pt-6 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Perfil</CardTitle>
