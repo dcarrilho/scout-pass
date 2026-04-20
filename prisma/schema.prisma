@@ -34,32 +34,75 @@ enum CheckInStatus {
   REJECTED
 }
 
+enum FollowStatus {
+  PENDING
+  ACCEPTED
+}
+
+enum LinkStatus {
+  PENDING
+  ACCEPTED
+}
+
 model User {
-  id                String       @id @default(cuid())
+  id                String         @id @default(cuid())
   name              String
-  username          String       @unique
-  email             String       @unique
+  username          String         @unique
+  email             String         @unique
   password          String
   bio               String?
   avatar_url        String?
-  role              Role         @default(USER)
+  is_private        Boolean        @default(false)
+  role              Role           @default(USER)
   motorcycles       Motorcycle[]
-  checkins          CheckIn[]
-  reviewed_checkins CheckIn[]    @relation("ReviewedCheckIns")
-  created_at        DateTime     @default(now())
-  updated_at        DateTime     @updatedAt
+  checkins          CheckIn[]      @relation("UserCheckIns")
+  collab_checkins   CheckIn[]      @relation("CollabCheckIns")
+  reviewed_checkins CheckIn[]      @relation("ReviewedCheckIns")
+  following         Follow[]       @relation("Follower")
+  followers         Follow[]       @relation("Following")
+  piloto_links      PilotoGarupa[] @relation("Piloto")
+  garupa_links      PilotoGarupa[] @relation("Garupa")
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
 }
 
 model Motorcycle {
-  id         String    @id @default(cuid())
-  user_id    String
-  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  brand      String
-  model      String
-  year       Int
-  is_active  Boolean   @default(true)
-  checkins   CheckIn[]
-  created_at DateTime  @default(now())
+  id            String    @id @default(cuid())
+  user_id       String
+  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  brand         String
+  model         String
+  year          Int
+  license_plate String?
+  owned_from    DateTime?
+  owned_until   DateTime?
+  is_active     Boolean   @default(true)
+  checkins      CheckIn[]
+  created_at    DateTime  @default(now())
+}
+
+model Follow {
+  id           String       @id @default(cuid())
+  follower_id  String
+  follower     User         @relation("Follower", fields: [follower_id], references: [id], onDelete: Cascade)
+  following_id String
+  following    User         @relation("Following", fields: [following_id], references: [id], onDelete: Cascade)
+  status       FollowStatus @default(PENDING)
+  created_at   DateTime     @default(now())
+
+  @@unique([follower_id, following_id])
+}
+
+model PilotoGarupa {
+  id         String     @id @default(cuid())
+  piloto_id  String
+  piloto     User       @relation("Piloto", fields: [piloto_id], references: [id], onDelete: Cascade)
+  garupa_id  String
+  garupa     User       @relation("Garupa", fields: [garupa_id], references: [id], onDelete: Cascade)
+  status     LinkStatus @default(PENDING)
+  created_at DateTime   @default(now())
+
+  @@unique([piloto_id, garupa_id])
 }
 
 model Challenge {
@@ -88,24 +131,26 @@ model ChallengeTarget {
 }
 
 model CheckIn {
-  id               String        @id @default(cuid())
+  id               String          @id @default(cuid())
   user_id          String
-  user             User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user             User            @relation("UserCheckIns", fields: [user_id], references: [id], onDelete: Cascade)
+  collab_user_id   String?
+  collab_user      User?           @relation("CollabCheckIns", fields: [collab_user_id], references: [id])
   challenge_id     String
-  challenge        Challenge     @relation(fields: [challenge_id], references: [id])
+  challenge        Challenge       @relation(fields: [challenge_id], references: [id])
   target_id        String
   target           ChallengeTarget @relation(fields: [target_id], references: [id])
   motorcycle_id    String?
-  motorcycle       Motorcycle?   @relation(fields: [motorcycle_id], references: [id])
+  motorcycle       Motorcycle?     @relation(fields: [motorcycle_id], references: [id])
   photo_url        String
   exif_latitude    Float?
   exif_longitude   Float?
   exif_taken_at    DateTime?
   declared_target  String?
-  status           CheckInStatus @default(PENDING)
+  status           CheckInStatus   @default(PENDING)
   rejection_reason String?
   reviewed_by      String?
-  reviewer         User?         @relation("ReviewedCheckIns", fields: [reviewed_by], references: [id])
+  reviewer         User?           @relation("ReviewedCheckIns", fields: [reviewed_by], references: [id])
   reviewed_at      DateTime?
-  submitted_at     DateTime      @default(now())
+  submitted_at     DateTime        @default(now())
 }

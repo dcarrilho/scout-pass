@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import ProfileForm from "@/components/profile/profile-form";
+import AccountForm from "@/components/profile/account-form";
 import MotorcycleForm from "@/components/profile/motorcycle-form";
 
 export default async function EditarPerfilPage() {
@@ -17,35 +18,47 @@ export default async function EditarPerfilPage() {
   if (!user) return null;
 
   return (
-    <main className="min-h-screen p-4 max-w-lg mx-auto space-y-6 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Editar perfil</h1>
+    <main className="min-h-screen max-w-lg mx-auto">
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center justify-between">
+        <h1 className="text-lg font-bold">Editar perfil</h1>
         <Link href={`/perfil/${user.username}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
           Ver perfil
         </Link>
+      </header>
+
+      <div className="p-4 space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Perfil</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProfileForm
+              name={user.name}
+              bio={user.bio}
+              avatarUrl={user.avatar_url}
+              isPrivate={user.is_private}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Conta</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AccountForm username={user.username} email={user.email} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Garagem</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MotorcycleForm motorcycles={user.motorcycles} />
+          </CardContent>
+        </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Informações pessoais</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ProfileForm
-            name={user.name}
-            bio={user.bio}
-            avatarUrl={user.avatar_url}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Garagem</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MotorcycleForm motorcycles={user.motorcycles} />
-        </CardContent>
-      </Card>
     </main>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import Image from "next/image";
 import { updateProfile } from "@/app/actions/profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +11,10 @@ type Props = {
   name: string;
   bio: string | null;
   avatarUrl: string | null;
+  isPrivate: boolean;
 };
 
-export default function ProfileForm({ name, bio, avatarUrl }: Props) {
+export default function ProfileForm({ name, bio, avatarUrl, isPrivate }: Props) {
   const [state, action, pending] = useActionState(updateProfile, undefined);
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -22,8 +22,7 @@ export default function ProfileForm({ name, bio, avatarUrl }: Props) {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setPreview(url);
+    setPreview(URL.createObjectURL(file));
   }
 
   const displayUrl = preview ?? avatarUrl;
@@ -31,14 +30,12 @@ export default function ProfileForm({ name, bio, avatarUrl }: Props) {
   return (
     <form action={action} encType="multipart/form-data" className="space-y-4">
       <div className="flex items-center gap-4">
-        <div className="relative w-20 h-20 rounded-full overflow-hidden bg-muted border">
+        <div className="w-20 h-20 rounded-full overflow-hidden bg-muted border shrink-0 flex items-center justify-center">
           {displayUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={displayUrl} alt="Avatar" className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-2xl text-muted-foreground">
-              {name[0]?.toUpperCase()}
-            </div>
+            <span className="text-2xl font-semibold text-muted-foreground">{name[0]?.toUpperCase()}</span>
           )}
         </div>
         <div>
@@ -60,6 +57,18 @@ export default function ProfileForm({ name, bio, avatarUrl }: Props) {
         <Textarea id="bio" name="bio" defaultValue={bio ?? ""} maxLength={160} placeholder="Conte um pouco sobre você..." rows={3} />
         {state?.errors?.bio && <p className="text-xs text-destructive">{state.errors.bio[0]}</p>}
       </div>
+
+      <label className="flex items-center gap-3 cursor-pointer select-none">
+        <div className="relative">
+          <input type="checkbox" name="is_private" className="sr-only peer" defaultChecked={isPrivate} />
+          <div className="w-10 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition-colors" />
+          <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
+        </div>
+        <div>
+          <p className="text-sm font-medium">Perfil privado</p>
+          <p className="text-xs text-muted-foreground">Apenas seguidores aprovados veem seus check-ins</p>
+        </div>
+      </label>
 
       {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
       {state?.success && <p className="text-sm text-green-600">Perfil atualizado!</p>}

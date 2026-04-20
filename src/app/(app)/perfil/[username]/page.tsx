@@ -4,6 +4,7 @@ import Link from "next/link";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
+import FollowButton from "@/components/social/follow-button";
 
 type Props = { params: Promise<{ username: string }> };
 
@@ -20,15 +21,28 @@ export default async function PerfilPage({ params }: Props) {
 
   if (!user) notFound();
 
-  const [checkInCount, challengeGroups] = await Promise.all([
+  const isOwner = session.userId === user.id;
+
+  const [followerCount, followingCount, checkInCount, challengeGroups, currentFollow] = await Promise.all([
+    prisma.follow.count({ where: { following_id: user.id, status: "ACCEPTED" } }),
+    prisma.follow.count({ where: { follower_id: user.id, status: "ACCEPTED" } }),
     prisma.checkIn.count({ where: { user_id: user.id, status: "APPROVED" } }),
-    prisma.checkIn.groupBy({
-      by: ["challenge_id"],
-      where: { user_id: user.id, status: "APPROVED" },
-    }),
+    prisma.checkIn.groupBy({ by: ["challenge_id"], where: { user_id: user.id, status: "APPROVED" } }),
+    !isOwner
+      ? prisma.follow.findUnique({
+          where: { follower_id_following_id: { follower_id: session.userId, following_id: user.id } },
+        })
+      : Promise.resolve(null),
   ]);
 
-  const isOwner = session.userId === user.id;
+  const followStatus = currentFollow?.status === "ACCEPTED"
+    ? "accepted"
+    : currentFollow?.status === "PENDING"
+    ? "pending"
+    : "none";
+
+  const isFollowing = followStatus === "accepted";
+  const canSeeContent = isOwner || !user.is_private || isFollowing;
   const activeMoto = user.motorcycles[0];
 
   return (
@@ -55,25 +69,56 @@ export default async function PerfilPage({ params }: Props) {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold truncate">{user.name}</h2>
-            {user.bio && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{user.bio}</p>}
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold truncate">{user.name}</h2>
+              {user.is_private && <span className="text-muted-foreground text-sm">🔒</span>}
+            </div>
+            {canSeeContent && user.bio && (
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{user.bio}</p>
+            )}
           </div>
         </div>
+
+        {/* Follow button */}
+        {!isOwner && (
+          <FollowButton
+            targetUserId={user.id}
+            status={followStatus}
+            isPrivate={user.is_private}
+          />
+        )}
 
         {/* Stats row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border bg-card p-4 text-center">
-            <p className="text-2xl font-bold">{checkInCount}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Check-ins</p>
+        <div className="grid grid-cols-4 gap-2">
+          <div className="rounded-xl border bg-card p-3 text-center">
+            <p className="text-xl font-bold">{checkInCount}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Check-ins</p>
           </div>
-          <div className="rounded-xl border bg-card p-4 text-center">
-            <p className="text-2xl font-bold">{challengeGroups.length}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Desafios</p>
+          <div className="rounded-xl border bg-card p-3 text-center">
+            <p className="text-xl font-bold">{challengeGroups.length}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Desafios</p>
+          </div>
+          <div className="rounded-xl border bg-card p-3 text-center">
+            <p className="text-xl font-bold">{followerCount}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Seguidores</p>
+          </div>
+          <div className="rounded-xl border bg-card p-3 text-center">
+            <p className="text-xl font-bold">{followingCount}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Seguindo</p>
           </div>
         </div>
 
+        {/* Private gate */}
+        {!canSeeContent && (
+          <div className="rounded-xl border bg-card p-8 text-center space-y-2">
+            <p className="text-2xl">🔒</p>
+            <p className="font-semibold">Perfil privado</p>
+            <p className="text-sm text-muted-foreground">Siga para ver as conquistas de {user.name}</p>
+          </div>
+        )}
+
         {/* Active motorcycle */}
-        {activeMoto && (
+        {canSeeContent && activeMoto && (
           <div className="rounded-xl border bg-card px-4 py-3 flex items-center gap-3">
             <span className="text-2xl">🏍️</span>
             <div>
@@ -81,6 +126,13 @@ export default async function PerfilPage({ params }: Props) {
               <p className="font-semibold text-sm">{activeMoto.brand} {activeMoto.model} {activeMoto.year}</p>
             </div>
           </div>
+        )}
+
+        {/* Moderação link for mods/admins */}
+        {isOwner && (session.role === "MODERATOR" || session.role === "ADMIN") && (
+          <Link href="/moderacao" className={buttonVariants({ variant: "outline" }) + " w-full justify-center"}>
+            🛡️ Fila de moderação
+          </Link>
         )}
       </div>
     </main>

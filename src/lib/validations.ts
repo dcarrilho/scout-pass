@@ -23,6 +23,17 @@ export const LoginSchema = z.object({
 export const ProfileSchema = z.object({
   name: z.string().min(2, { message: "Nome deve ter pelo menos 2 caracteres." }).trim(),
   bio: z.string().max(160, { message: "Bio deve ter no máximo 160 caracteres." }).trim().optional(),
+  is_private: z.boolean().optional(),
+});
+
+export const EditAccountSchema = z.object({
+  username: z
+    .string()
+    .min(3, { message: "Usuário deve ter pelo menos 3 caracteres." })
+    .max(30, { message: "Usuário deve ter no máximo 30 caracteres." })
+    .regex(/^[a-z0-9_]+$/, { message: "Apenas letras minúsculas, números e _." })
+    .trim(),
+  email: z.string().email({ message: "E-mail inválido." }).trim(),
 });
 
 export const MotorcycleSchema = z.object({
@@ -33,6 +44,23 @@ export const MotorcycleSchema = z.object({
     .regex(/^\d{4}$/, { message: "Ano inválido." })
     .transform(Number)
     .refine((y) => y >= 1900 && y <= new Date().getFullYear() + 1, { message: "Ano inválido." }),
+  license_plate: z.string().max(10).trim().optional(),
+  owned_from: z.string().optional(),
+  owned_until: z.string().optional(),
+});
+
+export const MotorcycleEditSchema = z.object({
+  id: z.string().min(1),
+  brand: z.string().min(1, { message: "Marca é obrigatória." }).trim(),
+  model: z.string().min(1, { message: "Modelo é obrigatório." }).trim(),
+  year: z
+    .string()
+    .regex(/^\d{4}$/, { message: "Ano inválido." })
+    .transform(Number)
+    .refine((y) => y >= 1900 && y <= new Date().getFullYear() + 1, { message: "Ano inválido." }),
+  license_plate: z.string().max(10).trim().optional(),
+  owned_from: z.string().optional(),
+  owned_until: z.string().optional(),
 });
 
 export type SignupFormState =
@@ -47,6 +75,14 @@ export type ProfileFormState =
   | { errors?: { name?: string[]; bio?: string[] }; message?: string; success?: boolean }
   | undefined;
 
+export type EditAccountFormState =
+  | { errors?: { username?: string[]; email?: string[] }; message?: string; success?: boolean }
+  | undefined;
+
 export type MotorcycleFormState =
   | { errors?: { brand?: string[]; model?: string[]; year?: string[] }; message?: string; success?: boolean }
+  | undefined;
+
+export type MotorcycleEditFormState =
+  | { errors?: { brand?: string[]; model?: string[]; year?: string[]; license_plate?: string[] }; message?: string; success?: boolean }
   | undefined;

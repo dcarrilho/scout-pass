@@ -4,7 +4,16 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/dal";
 import { uploadAvatar } from "@/lib/storage";
-import { ProfileSchema, MotorcycleSchema, ProfileFormState, MotorcycleFormState } from "@/lib/validations";
+import {
+  ProfileSchema,
+  EditAccountSchema,
+  MotorcycleSchema,
+  MotorcycleEditSchema,
+  ProfileFormState,
+  EditAccountFormState,
+  MotorcycleFormState,
+  MotorcycleEditFormState,
+} from "@/lib/validations";
 
 export async function updateProfile(
   state: ProfileFormState,
@@ -15,6 +24,7 @@ export async function updateProfile(
   const validated = ProfileSchema.safeParse({
     name: formData.get("name"),
     bio: formData.get("bio") || undefined,
+    is_private: formData.get("is_private") === "on",
   });
 
   if (!validated.success) {
@@ -37,8 +47,47 @@ export async function updateProfile(
     data: {
       name: validated.data.name,
       bio: validated.data.bio ?? null,
+      is_private: validated.data.is_private ?? false,
       ...(avatar_url && { avatar_url }),
     },
+  });
+
+  revalidatePath("/perfil/editar");
+  return { success: true };
+}
+
+export async function updateAccount(
+  state: EditAccountFormState,
+  formData: FormData
+): Promise<EditAccountFormState> {
+  const session = await verifySession();
+
+  const validated = EditAccountSchema.safeParse({
+    username: formData.get("username"),
+    email: formData.get("email"),
+  });
+
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+
+  const existing = await prisma.user.findFirst({
+    where: {
+      OR: [{ username: validated.data.username }, { email: validated.data.email }],
+      NOT: { id: session.userId },
+    },
+  });
+
+  if (existing) {
+    if (existing.username === validated.data.username) {
+      return { errors: { username: ["Este usuário já está em uso."] } };
+    }
+    return { errors: { email: ["Este e-mail já está em uso."] } };
+  }
+
+  await prisma.user.update({
+    where: { id: session.userId },
+    data: { username: validated.data.username, email: validated.data.email },
   });
 
   revalidatePath("/perfil/editar");
@@ -55,6 +104,9 @@ export async function addMotorcycle(
     brand: formData.get("brand"),
     model: formData.get("model"),
     year: formData.get("year"),
+    license_plate: (formData.get("license_plate") as string) || undefined,
+    owned_from: (formData.get("owned_from") as string) || undefined,
+    owned_until: (formData.get("owned_until") as string) || undefined,
   });
 
   if (!validated.success) {
@@ -67,6 +119,45 @@ export async function addMotorcycle(
       brand: validated.data.brand,
       model: validated.data.model,
       year: validated.data.year,
+      license_plate: validated.data.license_plate ?? null,
+      owned_from: validated.data.owned_from ? new Date(validated.data.owned_from) : null,
+      owned_until: validated.data.owned_until ? new Date(validated.data.owned_until) : null,
+    },
+  });
+
+  revalidatePath("/perfil/editar");
+  return { success: true };
+}
+
+export async function editMotorcycle(
+  state: MotorcycleEditFormState,
+  formData: FormData
+): Promise<MotorcycleEditFormState> {
+  const session = await verifySession();
+
+  const validated = MotorcycleEditSchema.safeParse({
+    id: formData.get("id"),
+    brand: formData.get("brand"),
+    model: formData.get("model"),
+    year: formData.get("year"),
+    license_plate: (formData.get("license_plate") as string) || undefined,
+    owned_from: (formData.get("owned_from") as string) || undefined,
+    owned_until: (formData.get("owned_until") as string) || undefined,
+  });
+
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+
+  await prisma.motorcycle.update({
+    where: { id: validated.data.id, user_id: session.userId },
+    data: {
+      brand: validated.data.brand,
+      model: validated.data.model,
+      year: validated.data.year,
+      license_plate: validated.data.license_plate ?? null,
+      owned_from: validated.data.owned_from ? new Date(validated.data.owned_from) : null,
+      owned_until: validated.data.owned_until ? new Date(validated.data.owned_until) : null,
     },
   });
 
