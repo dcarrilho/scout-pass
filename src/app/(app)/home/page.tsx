@@ -1,7 +1,7 @@
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
-import { logout } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import Link from "next/link";
 
 export default async function HomePage() {
   const session = await verifySession();
@@ -9,7 +9,7 @@ export default async function HomePage() {
   const [user, recentCheckIns] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.userId },
-      select: { name: true },
+      select: { name: true, username: true, avatar_url: true },
     }),
     prisma.checkIn.findMany({
       where: { status: "APPROVED" },
@@ -24,29 +24,29 @@ export default async function HomePage() {
   ]);
 
   return (
-    <main className="max-w-lg mx-auto p-4 py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">ScoutPass</h1>
-        <form action={logout}>
-          <Button variant="ghost" size="sm" type="submit">Sair</Button>
-        </form>
-      </div>
+    <main className="max-w-lg mx-auto">
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center justify-between">
+        <span className="text-lg font-bold tracking-tight">ScoutPass</span>
+        <Link href={`/perfil/${user?.username}`} className="w-9 h-9 rounded-full bg-muted border overflow-hidden shrink-0 flex items-center justify-center">
+          {user?.avatar_url ? (
+            <Image src={user.avatar_url} alt="" width={36} height={36} className="object-cover w-full h-full" />
+          ) : (
+            <span className="text-sm font-semibold">{user?.name[0]?.toUpperCase()}</span>
+          )}
+        </Link>
+      </header>
 
-      {recentCheckIns.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-          <span className="text-5xl">🏍️</span>
-          <p className="font-medium">Nenhuma conquista ainda</p>
-          <p className="text-sm text-muted-foreground">
-            Seja o primeiro a completar um check-in!
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {recentCheckIns.map((checkin) => (
-            <FeedCard key={checkin.id} checkin={checkin} />
-          ))}
-        </div>
-      )}
+      <div className="py-4 px-4 space-y-5">
+        {recentCheckIns.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+            <span className="text-5xl">🏍️</span>
+            <p className="font-semibold text-lg">Nenhuma conquista ainda</p>
+            <p className="text-sm text-muted-foreground">Seja o primeiro a completar um check-in!</p>
+          </div>
+        ) : (
+          recentCheckIns.map((checkin) => <FeedCard key={checkin.id} checkin={checkin} />)
+        )}
+      </div>
     </main>
   );
 }
@@ -62,30 +62,37 @@ function FeedCard({ checkin }: {
   };
 }) {
   return (
-    <article className="border rounded-xl overflow-hidden bg-card">
-      <div className="flex items-center gap-3 p-3">
-        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center font-medium text-sm shrink-0 overflow-hidden">
+    <article className="rounded-2xl overflow-hidden border bg-card shadow-sm">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="w-10 h-10 rounded-full bg-muted border shrink-0 overflow-hidden flex items-center justify-center">
           {checkin.user.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={checkin.user.avatar_url} alt="" className="w-full h-full object-cover" />
           ) : (
-            checkin.user.name[0]?.toUpperCase()
+            <span className="text-sm font-semibold">{checkin.user.name[0]?.toUpperCase()}</span>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm truncate">{checkin.user.name}</p>
-          <p className="text-xs text-muted-foreground truncate">
-            {checkin.challenge.name} · {checkin.target.name}
+          <p className="font-semibold text-sm leading-tight">{checkin.user.name}</p>
+          <p className="text-xs text-muted-foreground truncate mt-0.5">
+            {checkin.target.name} · {checkin.challenge.name}
           </p>
         </div>
         <span className="text-xs text-muted-foreground shrink-0">
           {checkin.reviewed_at
-            ? new Date(checkin.reviewed_at).toLocaleDateString("pt-BR")
+            ? new Date(checkin.reviewed_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
             : ""}
         </span>
       </div>
+
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={checkin.photo_url} alt="Check-in" className="w-full aspect-[4/3] object-cover" />
+
+      <div className="px-4 py-2.5">
+        <span className="text-xs font-medium bg-muted rounded-full px-3 py-1 text-muted-foreground">
+          ✅ {checkin.challenge.name}
+        </span>
+      </div>
     </article>
   );
 }
