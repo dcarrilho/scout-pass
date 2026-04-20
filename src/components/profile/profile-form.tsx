@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useRef, useState } from "react";
 import Image from "next/image";
 import { updateProfile } from "@/app/actions/profile";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,24 @@ type Props = {
 export default function ProfileForm({ name, bio, avatarUrl }: Props) {
   const [state, action, pending] = useActionState(updateProfile, undefined);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+  }
+
+  const displayUrl = preview ?? avatarUrl;
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} encType="multipart/form-data" className="space-y-4">
       <div className="flex items-center gap-4">
         <div className="relative w-20 h-20 rounded-full overflow-hidden bg-muted border">
-          {avatarUrl ? (
-            <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
+          {displayUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={displayUrl} alt="Avatar" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-2xl text-muted-foreground">
               {name[0]?.toUpperCase()}
@@ -32,9 +43,9 @@ export default function ProfileForm({ name, bio, avatarUrl }: Props) {
         </div>
         <div>
           <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-            Alterar foto
+            {preview ? "Foto selecionada ✓" : "Alterar foto"}
           </Button>
-          <input ref={fileRef} name="avatar" type="file" accept="image/*" className="hidden" />
+          <input ref={fileRef} name="avatar" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
         </div>
       </div>
 
