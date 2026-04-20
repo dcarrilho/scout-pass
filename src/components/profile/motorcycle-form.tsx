@@ -43,8 +43,8 @@ function MotorcycleItem({ moto }: { moto: Motorcycle }) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold">{moto.brand} {moto.model}</span>
               <span className="text-sm text-muted-foreground">{moto.year}</span>
-              {moto.is_active && (
-                <span className="text-xs bg-primary text-primary-foreground rounded-full px-2 py-0.5">Ativa</span>
+              {moto.owned_until === null && moto.owned_from !== null && (
+                <span className="text-xs bg-primary text-primary-foreground rounded-full px-2 py-0.5">Atual</span>
               )}
             </div>
             {period && <p className="text-xs text-muted-foreground mt-0.5">{period}</p>}
