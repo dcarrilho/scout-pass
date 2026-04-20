@@ -37,8 +37,9 @@ export async function updateProfile(
   if (avatarFile && avatarFile.size > 0) {
     try {
       avatar_url = await uploadAvatar(session.userId, avatarFile);
-    } catch {
-      return { message: "Erro ao enviar a foto. Tente novamente." };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      return { message: `Erro ao enviar a foto: ${msg}` };
     }
   }
 
