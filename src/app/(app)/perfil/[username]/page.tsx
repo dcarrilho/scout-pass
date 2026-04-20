@@ -16,7 +16,10 @@ export default async function PerfilPage({ params }: Props) {
   const user = await prisma.user.findUnique({
     where: { username },
     include: {
-      motorcycles: { where: { is_active: true }, take: 1 },
+      motorcycles: {
+        where: { owned_until: null },
+        orderBy: { owned_from: "desc" },
+      },
     },
   });
 
@@ -44,7 +47,7 @@ export default async function PerfilPage({ params }: Props) {
 
   const isFollowing = followStatus === "accepted";
   const canSeeContent = isOwner || !user.is_private || isFollowing;
-  const activeMoto = user.motorcycles[0];
+  const currentMotos = user.motorcycles;
 
   return (
     <main className="min-h-screen max-w-lg mx-auto">
@@ -119,14 +122,21 @@ export default async function PerfilPage({ params }: Props) {
           </div>
         )}
 
-        {/* Active motorcycle */}
-        {canSeeContent && activeMoto && (
-          <div className="rounded-xl border bg-card px-4 py-3 flex items-center gap-3">
-            <span className="text-2xl">🏍️</span>
-            <div>
-              <p className="text-xs text-muted-foreground">Moto ativa</p>
-              <p className="font-semibold text-sm">{activeMoto.brand} {activeMoto.model} {activeMoto.year}</p>
-            </div>
+        {/* Current motorcycles */}
+        {canSeeContent && currentMotos.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Garagem</p>
+            {currentMotos.map((moto) => (
+              <div key={moto.id} className="rounded-xl border bg-card px-4 py-3 flex items-center gap-3">
+                <span className="text-2xl">🏍️</span>
+                <div>
+                  <p className="font-semibold text-sm">{moto.brand} {moto.model} {moto.year}</p>
+                  {moto.owned_from && (
+                    <p className="text-xs text-muted-foreground">desde {moto.owned_from}</p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
