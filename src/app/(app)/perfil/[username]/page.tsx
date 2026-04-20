@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Pencil } from "lucide-react";
+import { Settings } from "lucide-react";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
@@ -52,10 +52,22 @@ export default async function PerfilPage({ params }: Props) {
   return (
     <main className="min-h-screen max-w-lg mx-auto">
       <div className="p-4 pt-6 space-y-5">
+        {/* Edit button */}
+        {isOwner && (
+          <div className="flex justify-end">
+            <Link
+              href="/perfil/editar"
+              className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <Settings className="size-5" />
+            </Link>
+          </div>
+        )}
+
         {/* Avatar + info */}
         <div className="flex items-center gap-4">
           <div className="relative shrink-0">
-            <div className="w-20 h-20 rounded-full overflow-hidden bg-muted border-2">
+            <div className="w-20 h-20 rounded-2xl overflow-hidden bg-muted border-2">
               {user.avatar_url ? (
                 <Image src={user.avatar_url} alt={user.name} fill className="object-cover" />
               ) : (
@@ -64,14 +76,6 @@ export default async function PerfilPage({ params }: Props) {
                 </div>
               )}
             </div>
-            {isOwner && (
-              <Link
-                href="/perfil/editar"
-                className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md border-2 border-background"
-              >
-                <Pencil className="size-3.5" />
-              </Link>
-            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
