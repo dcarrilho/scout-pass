@@ -1,6 +1,6 @@
 generator client {
-  provider        = "prisma-client"
-  output          = "../src/generated/prisma"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -8,11 +8,25 @@ datasource db {
 }
 
 model User {
+  id          String       @id @default(cuid())
+  name        String
+  username    String       @unique
+  email       String       @unique
+  password    String
+  bio         String?
+  avatar_url  String?
+  motorcycles Motorcycle[]
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+}
+
+model Motorcycle {
   id         String   @id @default(cuid())
-  name       String
-  username   String   @unique
-  email      String   @unique
-  password   String
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  brand      String
+  model      String
+  year       Int
+  is_active  Boolean  @default(true)
   created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
 }

@@ -173,8 +173,69 @@ model User {
 
 | Versão | Conteúdo |
 |---|---|
-| v0.2 | Perfil do usuário (edição, foto, bio, moto) |
 | v0.3 | Desafios e sistema de check-in |
 | v0.4 | Timeline e rede social |
 | v0.5 | Moderação e backoffice |
 | v0.6 | Mapa explorador |
+
+---
+
+## 11. Perfil do Usuário — v0.2
+
+### 11.1 Modelo de Dados
+
+```prisma
+model User {
+  id          String       @id @default(cuid())
+  name        String
+  username    String       @unique
+  email       String       @unique
+  password    String
+  bio         String?
+  avatar_url  String?
+  motorcycles Motorcycle[]
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+}
+
+model Motorcycle {
+  id        String   @id @default(cuid())
+  user_id   String
+  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  brand     String
+  model     String
+  year      Int
+  is_active Boolean  @default(true)
+  created_at DateTime @default(now())
+}
+```
+
+### 11.2 Funcionalidades
+
+**Edição de perfil (`/perfil/editar`)** — autenticado
+- Alterar nome
+- Alterar bio (texto livre, máx. 160 caracteres)
+- Upload de foto de avatar (armazenada no Supabase Storage)
+- Cadastrar moto (marca, modelo, ano)
+- Marcar moto como ativa (apenas uma por vez)
+- Remover moto
+
+**Perfil público (`/perfil/[username]`)** — autenticado
+- Foto de avatar
+- Nome e @username
+- Bio
+- Moto ativa em destaque
+
+### 11.3 Rotas
+
+| Rota | Acesso | Descrição |
+|---|---|---|
+| `/perfil/editar` | Autenticado | Formulário de edição do próprio perfil |
+| `/perfil/[username]` | Autenticado | Perfil público de qualquer usuário |
+
+### 11.4 Fora de escopo — v0.2
+
+- Seguir/deixar de seguir usuários
+- Mural de medalhas
+- Mapa de calor de municípios
+- Histórico de motos (apenas a ativa é exibida no perfil)
