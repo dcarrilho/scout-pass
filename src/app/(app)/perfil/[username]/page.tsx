@@ -98,14 +98,14 @@ export default async function PerfilPage({ params }: Props) {
             <p className="text-xl font-bold">{challengeGroups.length}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Desafios</p>
           </div>
-          <div className="rounded-xl border bg-card p-3 text-center">
+          <Link href={`/perfil/${user.username}/seguidores`} className="rounded-xl border bg-card p-3 text-center hover:bg-muted/50 transition-colors">
             <p className="text-xl font-bold">{followerCount}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Seguidores</p>
-          </div>
-          <div className="rounded-xl border bg-card p-3 text-center">
+          </Link>
+          <Link href={`/perfil/${user.username}/seguindo`} className="rounded-xl border bg-card p-3 text-center hover:bg-muted/50 transition-colors">
             <p className="text-xl font-bold">{followingCount}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Seguindo</p>
-          </div>
+          </Link>
         </div>
 
         {/* Private gate */}
