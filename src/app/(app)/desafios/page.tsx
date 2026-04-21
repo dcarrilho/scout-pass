@@ -144,7 +144,7 @@ export default async function DesafiosPage() {
         {/* Standalone Challenges */}
         {standalone.length > 0 && (
           <section className="space-y-3">
-            {(organizers.length > 0 || standaloneSeries.length > 0) && (
+            {organizers.length > 0 && (
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Avulsos</p>
             )}
             <div className="grid gap-3">
