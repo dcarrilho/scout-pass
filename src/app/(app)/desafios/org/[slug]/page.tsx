@@ -62,22 +62,16 @@ export default async function OrganizerPage({ params }: Props) {
 
       {/* Cover header */}
       <div
-        className="relative px-4 pt-5 pb-6 overflow-hidden"
+        className="relative px-4 pt-5 pb-6"
         style={{
-          background: org.cover_url ? "#0f0d0c" : `
-            radial-gradient(ellipse at 10% 120%, rgba(249,115,22,0.18), transparent 55%),
-            repeating-linear-gradient(135deg, #1a1614 0 10px, #141210 10px 20px)
-          `,
+          backgroundImage: org.cover_url
+            ? `linear-gradient(rgba(12,10,9,0.65), rgba(12,10,9,0.65)), url(${org.cover_url})`
+            : `radial-gradient(ellipse at 10% 120%, rgba(249,115,22,0.18), transparent 55%), repeating-linear-gradient(135deg, #1a1614 0 10px, #141210 10px 20px)`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
         }}
       >
-        {org.cover_url && (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={org.cover_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0" style={{ background: "rgba(12,10,9,0.62)" }} />
-          </>
-        )}
         <Link
           href="/desafios"
           className="inline-flex items-center gap-1 text-sm text-white/45 hover:text-white/80 transition-colors mb-5"
