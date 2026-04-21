@@ -16,7 +16,7 @@ type Motorcycle = {
   brand: string;
   model: string;
   year: number | null;
-  owned_from: string | null;
+  owned_from: number | null;
 };
 
 type RecentCheckIn = {
