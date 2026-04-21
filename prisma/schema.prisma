@@ -49,6 +49,7 @@ model User {
   password          String
   bio               String?
   avatar_url        String?
+  cover_url         String?
   is_private        Boolean        @default(false)
   role              Role           @default(USER)
   motorcycles       Motorcycle[]

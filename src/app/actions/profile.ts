@@ -3,16 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/dal";
-import { uploadAvatar } from "@/lib/storage";
+import { uploadAvatar, uploadCover } from "@/lib/storage";
+import bcrypt from "bcryptjs";
 import {
   ProfileSchema,
   EditAccountSchema,
   MotorcycleSchema,
   MotorcycleEditSchema,
+  ChangePasswordSchema,
   ProfileFormState,
   EditAccountFormState,
   MotorcycleFormState,
   MotorcycleEditFormState,
+  ChangePasswordFormState,
 } from "@/lib/validations";
 
 export async function updateProfile(
@@ -32,29 +35,42 @@ export async function updateProfile(
   }
 
   const avatarFile = formData.get("avatar") as File | null;
+  const coverFile = formData.get("cover") as File | null;
   let avatar_url: string | undefined;
+  let cover_url: string | undefined;
 
   if (avatarFile && avatarFile.size > 0) {
     try {
       avatar_url = await uploadAvatar(session.userId, avatarFile);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido";
-      return { message: `Erro ao enviar a foto: ${msg}` };
+      return { message: `Erro ao enviar o avatar: ${msg}` };
     }
   }
 
-  await prisma.user.update({
+  if (coverFile && coverFile.size > 0) {
+    try {
+      cover_url = await uploadCover(session.userId, coverFile);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      return { message: `Erro ao enviar a capa: ${msg}` };
+    }
+  }
+
+  const user = await prisma.user.update({
     where: { id: session.userId },
     data: {
       name: validated.data.name,
       bio: validated.data.bio ?? null,
       is_private: validated.data.is_private,
       ...(avatar_url && { avatar_url }),
+      ...(cover_url && { cover_url }),
     },
+    select: { username: true },
   });
 
-  revalidatePath("/perfil/editar");
-  return { success: true };
+  revalidatePath(`/perfil/${user.username}`);
+  return { success: true, username: user.username };
 }
 
 export async function updateAccount(
@@ -91,7 +107,35 @@ export async function updateAccount(
     data: { username: validated.data.username, email: validated.data.email },
   });
 
-  revalidatePath("/perfil/editar");
+  revalidatePath(`/perfil/${validated.data.username}`);
+  return { success: true, newUsername: validated.data.username };
+}
+
+export async function changePassword(
+  state: ChangePasswordFormState,
+  formData: FormData
+): Promise<ChangePasswordFormState> {
+  const session = await verifySession();
+
+  const validated = ChangePasswordSchema.safeParse({
+    current_password: formData.get("current_password"),
+    new_password: formData.get("new_password"),
+    confirm_password: formData.get("confirm_password"),
+  });
+
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { password: true } });
+  if (!user) return { message: "Usuário não encontrado." };
+
+  const valid = await bcrypt.compare(validated.data.current_password, user.password);
+  if (!valid) return { errors: { current_password: ["Senha atual incorreta."] } };
+
+  const hashed = await bcrypt.hash(validated.data.new_password, 12);
+  await prisma.user.update({ where: { id: session.userId }, data: { password: hashed } });
+
   return { success: true };
 }
 

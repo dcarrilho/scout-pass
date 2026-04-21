@@ -81,13 +81,16 @@ export default async function PerfilPage({ params }: Props) {
   return (
     <main className="min-h-screen max-w-lg mx-auto">
       {/* Cover banner */}
-      <div className="relative h-36 overflow-hidden" style={{
+      <div className="relative h-36 overflow-hidden" style={!user.cover_url ? {
         background: `
           radial-gradient(ellipse at 15% 120%, rgba(249,115,22,0.22), transparent 55%),
           radial-gradient(ellipse at 85% -20%, rgba(249,115,22,0.08), transparent 50%),
           repeating-linear-gradient(135deg, #1a1614 0 10px, #141210 10px 20px)
         `,
-      }}>
+      } : undefined}>
+        {user.cover_url && (
+          <Image src={user.cover_url} alt="Capa" fill className="object-cover" />
+        )}
         {/* Owner actions */}
         {isOwner && (
           <div className="absolute top-3 right-3 flex gap-1 z-10">

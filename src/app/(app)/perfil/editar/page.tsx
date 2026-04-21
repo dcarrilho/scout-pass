@@ -36,7 +36,7 @@ export default async function EditarPerfilPage() {
             <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Perfil</h2>
           </div>
           <div style={{ padding: "20px" }}>
-            <ProfileForm name={user.name} bio={user.bio} avatarUrl={user.avatar_url} isPrivate={user.is_private} />
+            <ProfileForm name={user.name} bio={user.bio} avatarUrl={user.avatar_url} coverUrl={user.cover_url ?? null} isPrivate={user.is_private} username={user.username} />
           </div>
         </section>
 

@@ -82,11 +82,11 @@ export type LoginFormState =
   | undefined;
 
 export type ProfileFormState =
-  | { errors?: { name?: string[]; bio?: string[] }; message?: string; success?: boolean }
+  | { errors?: { name?: string[]; bio?: string[] }; message?: string; success?: boolean; username?: string }
   | undefined;
 
 export type EditAccountFormState =
-  | { errors?: { username?: string[]; email?: string[] }; message?: string; success?: boolean }
+  | { errors?: { username?: string[]; email?: string[] }; message?: string; success?: boolean; newUsername?: string }
   | undefined;
 
 export type MotorcycleFormState =
@@ -95,4 +95,19 @@ export type MotorcycleFormState =
 
 export type MotorcycleEditFormState =
   | { errors?: { brand?: string[]; model?: string[]; year?: string[]; license_plate?: string[] }; message?: string; success?: boolean }
+  | undefined;
+
+export const ChangePasswordSchema = z
+  .object({
+    current_password: z.string().min(1, { message: "Informe a senha atual." }),
+    new_password: z.string().min(8, { message: "Nova senha deve ter pelo menos 8 caracteres." }),
+    confirm_password: z.string().min(1, { message: "Confirme a nova senha." }),
+  })
+  .refine((d) => d.new_password === d.confirm_password, {
+    message: "As senhas não coincidem.",
+    path: ["confirm_password"],
+  });
+
+export type ChangePasswordFormState =
+  | { errors?: { current_password?: string[]; new_password?: string[]; confirm_password?: string[] }; message?: string; success?: boolean }
   | undefined;

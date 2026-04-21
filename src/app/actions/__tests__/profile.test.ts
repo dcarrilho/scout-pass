@@ -8,7 +8,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 vi.mock("@/lib/dal", () => ({ verifySession: vi.fn() }));
-vi.mock("@/lib/storage", () => ({ uploadAvatar: vi.fn() }));
+vi.mock("@/lib/storage", () => ({ uploadAvatar: vi.fn(), uploadCover: vi.fn() }));
 
 import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/dal";
@@ -48,7 +48,7 @@ describe("updateProfile", () => {
   });
 
   it("updates user without avatar when no file provided", async () => {
-    mockUserUpdate.mockResolvedValue({} as any);
+    mockUserUpdate.mockResolvedValue({ username: "ana" } as any);
     const result = await updateProfile(undefined, fd({ name: "Ana", bio: "ok", is_private: "on" }));
     expect(mockUserUpdate).toHaveBeenCalled();
     expect(mockUploadAvatar).not.toHaveBeenCalled();
@@ -58,7 +58,7 @@ describe("updateProfile", () => {
   it("uploads avatar and updates user when file provided", async () => {
     const file = new File(["img"], "avatar.jpg", { type: "image/jpeg" });
     mockUploadAvatar.mockResolvedValue("https://cdn.test/avatar.jpg");
-    mockUserUpdate.mockResolvedValue({} as any);
+    mockUserUpdate.mockResolvedValue({ username: "ana" } as any);
 
     const f = new FormData();
     f.append("name", "Ana");
@@ -119,7 +119,8 @@ describe("updateAccount", () => {
     mockUserUpdate.mockResolvedValue({} as any);
     const result = await updateAccount(undefined, fd({ username: "freeuser", email: "free@test.com" }));
     expect(result?.success).toBe(true);
-    expect(mockRevalidate).toHaveBeenCalledWith("/perfil/editar");
+    expect(result?.newUsername).toBe("freeuser");
+    expect(mockRevalidate).toHaveBeenCalledWith("/perfil/freeuser");
   });
 });
 
