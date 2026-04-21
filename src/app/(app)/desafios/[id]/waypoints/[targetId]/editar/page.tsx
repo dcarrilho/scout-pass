@@ -16,7 +16,7 @@ export default async function EditarWaypointPage({ params }: Props) {
     where: { id: targetId, challenges: { some: { id } } },
     include: {
       challenges: { where: { id }, select: { name: true } },
-      city: { select: { id: true, name: true, state: true, region: true } },
+      city: { select: { id: true, name: true, state: true } },
     },
   });
   if (!target) notFound();
@@ -62,7 +62,6 @@ export default async function EditarWaypointPage({ params }: Props) {
           cityId={target.city?.id}
           cityName={target.city?.name}
           cityState={target.city?.state}
-          cityRegion={target.city?.region}
         />
       </div>
     </main>

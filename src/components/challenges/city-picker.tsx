@@ -1,174 +1,113 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
-import { getCitiesByState, type CityOption } from "@/app/actions/cities";
+import { useState, useTransition, useRef } from "react";
+import { searchCities, type CityOption } from "@/app/actions/cities";
 import { inputCls, inputStyle, inputFocusStyle } from "@/components/ui/dark-form";
-
-const REGIONS: Record<string, string[]> = {
-  "Norte": ["AC", "AM", "AP", "PA", "RO", "RR", "TO"],
-  "Nordeste": ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"],
-  "Centro-Oeste": ["DF", "GO", "MS", "MT"],
-  "Sudeste": ["ES", "MG", "RJ", "SP"],
-  "Sul": ["PR", "RS", "SC"],
-};
-
-const STATE_NAMES: Record<string, string> = {
-  AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas",
-  BA: "Bahia", CE: "Ceará", DF: "Distrito Federal", ES: "Espírito Santo",
-  GO: "Goiás", MA: "Maranhão", MT: "Mato Grosso", MS: "Mato Grosso do Sul",
-  MG: "Minas Gerais", PA: "Pará", PB: "Paraíba", PR: "Paraná",
-  PE: "Pernambuco", PI: "Piauí", RJ: "Rio de Janeiro", RN: "Rio Grande do Norte",
-  RS: "Rio Grande do Sul", RO: "Rondônia", RR: "Roraima", SC: "Santa Catarina",
-  SP: "São Paulo", SE: "Sergipe", TO: "Tocantins",
-};
-
-const selectStyle = {
-  ...inputStyle,
-  colorScheme: "dark" as const,
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-  backgroundRepeat: "no-repeat" as const,
-  backgroundPosition: "right 14px center" as const,
-  paddingRight: "36px",
-};
 
 type Props = {
   currentCityId?: string | null;
   currentCityName?: string | null;
   currentState?: string | null;
-  currentRegion?: string | null;
 };
 
-export function CityPicker({ currentCityId, currentCityName, currentState, currentRegion }: Props) {
-  const initialRegion = currentRegion ?? (currentState ? Object.entries(REGIONS).find(([, ufs]) => ufs.includes(currentState!))?.[0] ?? "" : "");
+export function CityPicker({ currentCityId, currentCityName, currentState }: Props) {
+  const initialLabel = currentCityName && currentState ? `${currentCityName} - ${currentState}` : "";
 
-  const [region, setRegion] = useState(initialRegion);
-  const [uf, setUf] = useState(currentState ?? "");
-  const [cities, setCities] = useState<CityOption[]>([]);
-  const [search, setSearch] = useState(currentCityName ?? "");
+  const [search, setSearch] = useState(initialLabel);
   const [selectedId, setSelectedId] = useState(currentCityId ?? "");
-  const [loadPending, startLoad] = useTransition();
+  const [results, setResults] = useState<CityOption[]>([]);
+  const [pending, startSearch] = useTransition();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const statesInRegion = region ? REGIONS[region] ?? [] : [];
-
-  function handleRegionChange(r: string) {
-    setRegion(r);
-    setUf("");
-    setCities([]);
-    setSearch("");
+  function handleChange(value: string) {
+    setSearch(value);
     setSelectedId("");
+    setResults([]);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.trim().length < 2) return;
+
+    debounceRef.current = setTimeout(() => {
+      startSearch(async () => {
+        const cities = await searchCities(value);
+        setResults(cities);
+      });
+    }, 250);
   }
 
-  function handleStateChange(newUf: string) {
-    setUf(newUf);
-    setSearch("");
-    setSelectedId("");
-    if (!newUf) { setCities([]); return; }
-    startLoad(async () => {
-      const result = await getCitiesByState(newUf);
-      setCities(result);
-    });
-  }
-
-  function handleCitySelect(city: CityOption) {
+  function handleSelect(city: CityOption) {
     setSelectedId(city.id);
-    setSearch(city.name);
+    setSearch(`${city.name} - ${city.state}`);
+    setResults([]);
   }
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q || selectedId) return cities.slice(0, 8);
-    return cities.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 8);
-  }, [cities, search, selectedId]);
+  function handleClear() {
+    setSelectedId("");
+    setSearch("");
+    setResults([]);
+  }
 
-  const showDropdown = cities.length > 0 && search.length > 0 && !selectedId;
+  const showDropdown = results.length > 0 && !selectedId;
 
   return (
-    <div className="space-y-3">
-      {/* Hidden input for form submission */}
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-white/75">Município</label>
       <input type="hidden" name="city_id" value={selectedId} />
 
-      {/* Region */}
-      <div className="space-y-1.5">
-        <label className="text-sm font-medium text-white/75">Região</label>
-        <select
-          value={region}
-          onChange={(e) => handleRegionChange(e.target.value)}
-          className={inputCls + " appearance-none"}
-          style={selectStyle}
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Ex: Cuiabá - MT"
+          value={search}
+          onChange={(e) => handleChange(e.target.value)}
+          className={inputCls}
+          style={inputStyle}
           onFocus={(e) => { e.target.style.borderColor = inputFocusStyle.borderColor; }}
-          onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; }}
-        >
-          <option value="">Selecione a região</option>
-          {Object.keys(REGIONS).map((r) => <option key={r} value={r}>{r}</option>)}
-        </select>
+          onBlur={(e) => {
+            e.target.style.borderColor = "rgba(255,255,255,0.1)";
+            // pequeno delay para permitir o click no dropdown
+            setTimeout(() => setResults([]), 150);
+          }}
+          autoComplete="off"
+        />
+
+        {(selectedId || search) && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+          >
+            ✕
+          </button>
+        )}
+
+        {pending && (
+          <span className="absolute right-10 top-1/2 -translate-y-1/2 text-xs text-white/30">…</span>
+        )}
+
+        {showDropdown && (
+          <div
+            className="absolute z-50 w-full mt-1 rounded-xl overflow-hidden shadow-xl"
+            style={{ background: "#1e1a17", border: "1px solid rgba(255,255,255,0.1)" }}
+          >
+            {results.map((city) => (
+              <button
+                key={city.id}
+                type="button"
+                onMouseDown={() => handleSelect(city)}
+                className="w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-white/5"
+                style={{ color: "rgba(255,255,255,0.8)" }}
+              >
+                <span>{city.name}</span>
+                <span className="ml-1.5 text-xs font-semibold" style={{ color: "#f97316" }}>{city.state}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* State */}
-      {region && (
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-white/75">Estado</label>
-          <select
-            value={uf}
-            onChange={(e) => handleStateChange(e.target.value)}
-            className={inputCls + " appearance-none"}
-            style={selectStyle}
-            onFocus={(e) => { e.target.style.borderColor = inputFocusStyle.borderColor; }}
-            onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; }}
-          >
-            <option value="">Selecione o estado</option>
-            {statesInRegion.map((s) => <option key={s} value={s}>{STATE_NAMES[s]} ({s})</option>)}
-          </select>
-        </div>
-      )}
-
-      {/* City search */}
-      {uf && (
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-white/75">
-            Município
-            {loadPending && <span className="text-white/30 ml-2 text-xs">carregando…</span>}
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Digite para buscar…"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setSelectedId(""); }}
-              className={inputCls}
-              style={inputStyle}
-              onFocus={(e) => { e.target.style.borderColor = inputFocusStyle.borderColor; }}
-              onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; }}
-              autoComplete="off"
-            />
-            {selectedId && (
-              <button
-                type="button"
-                onClick={() => { setSelectedId(""); setSearch(""); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 text-xs"
-              >
-                ✕
-              </button>
-            )}
-            {showDropdown && filtered.length > 0 && (
-              <div
-                className="absolute z-50 w-full mt-1 rounded-xl overflow-hidden shadow-lg"
-                style={{ background: "#1a1614", border: "1px solid rgba(255,255,255,0.12)" }}
-              >
-                {filtered.map((city) => (
-                  <button
-                    key={city.id}
-                    type="button"
-                    onMouseDown={() => handleCitySelect(city)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 transition-colors"
-                  >
-                    {city.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          {selectedId && <p className="text-xs" style={{ color: "rgba(249,115,22,0.8)" }}>✓ {search}</p>}
-        </div>
+      {selectedId && (
+        <p className="text-xs" style={{ color: "rgba(249,115,22,0.8)" }}>✓ {search}</p>
       )}
     </div>
   );

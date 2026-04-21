@@ -23,7 +23,6 @@ type Props = {
   cityId?: string | null;
   cityName?: string | null;
   cityState?: string | null;
-  cityRegion?: string | null;
 };
 
 export function EditWaypointForm({ targetId, challengeId, name, type, order, latitude, longitude, cityId, cityName, cityState, cityRegion }: Props) {
@@ -46,15 +45,11 @@ export function EditWaypointForm({ targetId, challengeId, name, type, order, lat
         </DarkSelect>
       </DarkField>
 
-      <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <p className="text-xs font-semibold text-white/35 uppercase tracking-widest">Município</p>
-        <CityPicker
-          currentCityId={cityId}
-          currentCityName={cityName}
-          currentState={cityState}
-          currentRegion={cityRegion}
-        />
-      </div>
+      <CityPicker
+        currentCityId={cityId}
+        currentCityName={cityName}
+        currentState={cityState}
+      />
 
       <DarkField label="Ordem" hint="Número para ordenação na lista">
         <DarkInput name="order" type="number" defaultValue={String(order)} />
