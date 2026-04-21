@@ -34,11 +34,11 @@ export default async function MapaPage({ searchParams }: Props) {
   const [targets, userCheckIns] = await Promise.all([
     prisma.challengeTarget.findMany({
       where: {
-        challenge_id: { in: challengeIds },
+        challenges: { some: { id: { in: challengeIds } } },
         latitude: { not: null },
         longitude: { not: null },
       },
-      include: { challenge: { select: { name: true } } },
+      include: { challenges: { select: { name: true }, take: 1 } },
     }),
     prisma.checkIn.findMany({
       where: { user_id: targetUserId, challenge_id: { in: challengeIds } },
@@ -59,7 +59,7 @@ export default async function MapaPage({ searchParams }: Props) {
     return {
       id: t.id,
       name: t.name,
-      challengeName: t.challenge.name,
+      challengeName: t.challenges[0]?.name ?? "",
       lat: t.latitude!,
       lng: t.longitude!,
       status: status === "APPROVED" ? "approved" : status === "PENDING" ? "pending" : "none",
