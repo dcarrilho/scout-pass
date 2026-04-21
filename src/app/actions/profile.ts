@@ -48,7 +48,7 @@ export async function updateProfile(
     data: {
       name: validated.data.name,
       bio: validated.data.bio ?? null,
-      is_private: validated.data.is_private ?? false,
+      is_private: validated.data.is_private,
       ...(avatar_url && { avatar_url }),
     },
   });
