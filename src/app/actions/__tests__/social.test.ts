@@ -120,41 +120,41 @@ describe("sendGarupaInvite", () => {
     return f;
   }
 
-  it("returns error when username is empty", async () => {
+  it("não cria vínculo quando username está vazio", async () => {
     mockVerify.mockResolvedValue(session);
-    const result = await sendGarupaInvite(undefined, fd(""));
-    expect(result.error).toBe("Informe um usuário.");
+    await sendGarupaInvite(fd(""));
+    expect(mockUserFind).not.toHaveBeenCalled();
   });
 
-  it("returns error when user not found", async () => {
+  it("não cria vínculo quando usuário não encontrado", async () => {
     mockVerify.mockResolvedValue(session);
     mockUserFind.mockResolvedValue(null);
-    const result = await sendGarupaInvite(undefined, fd("ghost"));
-    expect(result.error).toBe("Usuário não encontrado.");
+    await sendGarupaInvite(fd("ghost"));
+    expect(mockGarupaCreate).not.toHaveBeenCalled();
   });
 
-  it("returns error when inviting self", async () => {
+  it("não cria vínculo consigo mesmo", async () => {
     mockVerify.mockResolvedValue(session);
     mockUserFind.mockResolvedValue({ id: "u1", username: "u1" } as any);
-    const result = await sendGarupaInvite(undefined, fd("u1"));
-    expect(result.error).toBe("Você não pode se convidar.");
+    await sendGarupaInvite(fd("u1"));
+    expect(mockGarupaCreate).not.toHaveBeenCalled();
   });
 
-  it("returns error when link already exists", async () => {
+  it("não cria vínculo quando já existe", async () => {
     mockVerify.mockResolvedValue(session);
     mockUserFind.mockResolvedValue({ id: "u2", username: "u2" } as any);
     mockGarupaFind.mockResolvedValue({ id: "link-1" } as any);
-    const result = await sendGarupaInvite(undefined, fd("u2"));
-    expect(result.error).toBe("Vínculo já existe ou está pendente.");
+    await sendGarupaInvite(fd("u2"));
+    expect(mockGarupaCreate).not.toHaveBeenCalled();
   });
 
-  it("creates garupa link and returns success", async () => {
+  it("cria vínculo e revalida", async () => {
     mockVerify.mockResolvedValue(session);
     mockUserFind.mockResolvedValue({ id: "u2", username: "u2" } as any);
     mockGarupaFind.mockResolvedValue(null);
     mockGarupaCreate.mockResolvedValue({} as any);
-    const result = await sendGarupaInvite(undefined, fd("u2"));
-    expect(result.success).toBe(true);
+    await sendGarupaInvite(fd("u2"));
+    expect(mockGarupaCreate).toHaveBeenCalled();
     expect(mockRevalidate).toHaveBeenCalledWith("/notificacoes");
   });
 });

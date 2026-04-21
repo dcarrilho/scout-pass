@@ -63,18 +63,14 @@ export async function declineFollow(followId: string) {
   revalidatePath("/notificacoes");
 }
 
-export async function sendGarupaInvite(
-  _state: { error?: string; success?: boolean } | undefined,
-  formData: FormData
-): Promise<{ error?: string; success?: boolean }> {
+export async function sendGarupaInvite(formData: FormData): Promise<void> {
   const session = await verifySession();
   const targetUsername = (formData.get("username") as string)?.trim().toLowerCase();
 
-  if (!targetUsername) return { error: "Informe um usuário." };
+  if (!targetUsername) return;
 
   const target = await prisma.user.findUnique({ where: { username: targetUsername } });
-  if (!target) return { error: "Usuário não encontrado." };
-  if (target.id === session.userId) return { error: "Você não pode se convidar." };
+  if (!target || target.id === session.userId) return;
 
   const existing = await prisma.pilotoGarupa.findFirst({
     where: {
@@ -84,14 +80,14 @@ export async function sendGarupaInvite(
       ],
     },
   });
-  if (existing) return { error: "Vínculo já existe ou está pendente." };
+  if (existing) return;
 
   await prisma.pilotoGarupa.create({
     data: { piloto_id: session.userId, garupa_id: target.id },
   });
 
   revalidatePath("/notificacoes");
-  return { success: true };
+  revalidatePath(`/perfil/${targetUsername}`);
 }
 
 export async function acceptGarupaLink(linkId: string) {
