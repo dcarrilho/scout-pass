@@ -114,3 +114,15 @@ export async function declineGarupaLink(linkId: string) {
 
   revalidatePath("/notificacoes");
 }
+
+export async function markNotificationsRead(userId: string) {
+  const session = await verifySession();
+  if (session.userId !== userId) return;
+
+  await prisma.notification.updateMany({
+    where: { user_id: session.userId, read: false },
+    data: { read: true },
+  });
+
+  revalidatePath("/notificacoes");
+}

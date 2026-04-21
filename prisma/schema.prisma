@@ -36,6 +36,11 @@ enum LinkStatus {
   ACCEPTED
 }
 
+enum NotificationType {
+  CHECKIN_APPROVED
+  CHECKIN_REJECTED
+}
+
 model User {
   id                String         @id @default(cuid())
   name              String
@@ -54,6 +59,7 @@ model User {
   followers         Follow[]       @relation("Following")
   piloto_links      PilotoGarupa[] @relation("Piloto")
   garupa_links      PilotoGarupa[] @relation("Garupa")
+  notifications     Notification[]
   created_at        DateTime       @default(now())
   updated_at        DateTime       @updatedAt
 }
@@ -174,4 +180,16 @@ model CheckIn {
   reviewer         User?           @relation("ReviewedCheckIns", fields: [reviewed_by], references: [id])
   reviewed_at      DateTime?
   submitted_at     DateTime        @default(now())
+  notifications    Notification[]
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  user_id    String
+  user       User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  type       NotificationType
+  checkin_id String?
+  checkin    CheckIn?         @relation(fields: [checkin_id], references: [id], onDelete: SetNull)
+  read       Boolean          @default(false)
+  created_at DateTime         @default(now())
 }

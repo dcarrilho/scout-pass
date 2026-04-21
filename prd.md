@@ -180,7 +180,37 @@ model User {
 
 ---
 
-## 11. Perfil do Usuário — v0.2
+## 11. Funcionalidades do Fazedor de Chuva não presentes no ScoutPass
+
+> Levantamento feito em 2026-04-20 comparando `Fazedor de Chuva/projeto.md` com este PRD.
+> Estas funcionalidades existem no sistema legado e devem ser consideradas nas próximas versões.
+
+### Perfil e Social
+- [ ] **Mapa de calor de municípios conquistados** — exibido no perfil público do usuário
+- [ ] **Mural de medalhas** — exibição de conquistas/badges no perfil público
+- [ ] **Vínculo Piloto/Garupa** — convite, aceite e replicação automática de check-ins aprovados entre parceiros de viagem
+- [ ] **Configuração de visibilidade do perfil** — opção Público / Privado
+
+### Desafios e Check-in
+- [ ] **Notificações in-app** — aviso ao usuário quando check-in é aprovado ou reprovado
+- [ ] **PWA prompt "Adicionar à Tela Inicial"** — manifesto configurado + prompt nativo de instalação
+
+### Timeline e Rede Social
+- [ ] **Posts automáticos de gamificação** — gerados ao atingir marcos (MILESTONE, CHALLENGE_START) sem ação manual do usuário
+- [ ] **Curtidas com ícone temático** — reação com ícone customizado de moto (não curtida genérica)
+
+### Backoffice e Moderação
+- [ ] **Gestão de checkpoints por tipo de desafio** — CRUD de checkpoints específicos para Rodoviário e Lendário
+- [ ] **Gestão de pontos de apoio parceiros** — cadastro, edição e ativação de parceiros comerciais no backoffice
+
+### Mapa e Pontos de Apoio
+- [ ] **Pins de parceiros comerciais no mapa** — exibição de parceiros sobre o mapa explorador
+- [ ] **Check-in em pontos de apoio** — gera badge exclusivo do parceiro
+- [ ] **Badges de parceiros no perfil** — exibição de badges conquistados em pontos de apoio parceiros
+
+---
+
+## 12. Perfil do Usuário — v0.2
 
 ### 11.1 Modelo de Dados
 

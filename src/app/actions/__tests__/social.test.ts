@@ -6,6 +6,7 @@ vi.mock("@/lib/prisma", () => ({
     user: { findUnique: vi.fn() },
     follow: { upsert: vi.fn(), deleteMany: vi.fn(), update: vi.fn(), delete: vi.fn() },
     pilotoGarupa: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+    notification: { updateMany: vi.fn() },
   },
 }));
 vi.mock("@/lib/dal", () => ({
@@ -16,7 +17,7 @@ import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/dal";
 import {
   followUser, unfollowUser, acceptFollow, declineFollow,
-  sendGarupaInvite, acceptGarupaLink, declineGarupaLink,
+  sendGarupaInvite, acceptGarupaLink, declineGarupaLink, markNotificationsRead,
 } from "@/app/actions/social";
 
 const mockVerify = vi.mocked(verifySession);
@@ -29,6 +30,7 @@ const mockGarupaFind = vi.mocked(prisma.pilotoGarupa.findFirst);
 const mockGarupaCreate = vi.mocked(prisma.pilotoGarupa.create);
 const mockGarupaUpdate = vi.mocked(prisma.pilotoGarupa.update);
 const mockGarupaDelete = vi.mocked(prisma.pilotoGarupa.delete);
+const mockNotificationUpdateMany = vi.mocked(prisma.notification.updateMany);
 const mockRevalidate = vi.mocked(revalidatePath);
 
 const session = { isAuth: true, userId: "u1", role: "USER" };
@@ -176,5 +178,24 @@ describe("declineGarupaLink", () => {
     await declineGarupaLink("link-1");
     expect(mockGarupaDelete).toHaveBeenCalled();
     expect(mockRevalidate).toHaveBeenCalledWith("/notificacoes");
+  });
+});
+
+describe("markNotificationsRead", () => {
+  it("marks all unread notifications as read for the authenticated user", async () => {
+    mockVerify.mockResolvedValue(session);
+    mockNotificationUpdateMany.mockResolvedValue({ count: 3 });
+    await markNotificationsRead("u1");
+    expect(mockNotificationUpdateMany).toHaveBeenCalledWith({
+      where: { user_id: "u1", read: false },
+      data: { read: true },
+    });
+    expect(mockRevalidate).toHaveBeenCalledWith("/notificacoes");
+  });
+
+  it("does nothing when userId does not match session", async () => {
+    mockVerify.mockResolvedValue(session);
+    await markNotificationsRead("other-user");
+    expect(mockNotificationUpdateMany).not.toHaveBeenCalled();
   });
 });

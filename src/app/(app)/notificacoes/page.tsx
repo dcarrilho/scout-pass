@@ -1,13 +1,13 @@
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import Image from "next/image";
-import { acceptFollow, declineFollow, acceptGarupaLink, declineGarupaLink } from "@/app/actions/social";
+import { acceptFollow, declineFollow, acceptGarupaLink, declineGarupaLink, markNotificationsRead } from "@/app/actions/social";
 import { Button } from "@/components/ui/button";
 
 export default async function NotificacoesPage() {
   const session = await verifySession();
 
-  const [followRequests, garupaInvites] = await Promise.all([
+  const [followRequests, garupaInvites, checkinNotifications] = await Promise.all([
     prisma.follow.findMany({
       where: { following_id: session.userId, status: "PENDING" },
       include: { follower: { select: { id: true, name: true, username: true, avatar_url: true } } },
@@ -18,9 +18,24 @@ export default async function NotificacoesPage() {
       include: { piloto: { select: { id: true, name: true, username: true, avatar_url: true } } },
       orderBy: { created_at: "desc" },
     }),
+    prisma.notification.findMany({
+      where: { user_id: session.userId },
+      include: {
+        checkin: {
+          select: {
+            id: true,
+            rejection_reason: true,
+            challenge: { select: { name: true } },
+            target: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { created_at: "desc" },
+      take: 30,
+    }),
   ]);
 
-  const empty = followRequests.length === 0 && garupaInvites.length === 0;
+  const empty = followRequests.length === 0 && garupaInvites.length === 0 && checkinNotifications.length === 0;
 
   return (
     <main className="min-h-screen max-w-lg mx-auto">
@@ -31,6 +46,52 @@ export default async function NotificacoesPage() {
             <p className="font-semibold">Nenhuma notificação</p>
             <p className="text-sm text-muted-foreground">Tudo em dia por aqui!</p>
           </div>
+        )}
+
+        {checkinNotifications.length > 0 && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Check-ins
+              </h2>
+              {checkinNotifications.some((n) => !n.read) && (
+                <form action={markNotificationsRead.bind(null, session.userId)}>
+                  <button type="submit" className="text-xs text-muted-foreground underline underline-offset-2">
+                    Marcar tudo como lido
+                  </button>
+                </form>
+              )}
+            </div>
+            <ul className="space-y-3">
+              {checkinNotifications.map((n) => {
+                const approved = n.type === "CHECKIN_APPROVED";
+                return (
+                  <li
+                    key={n.id}
+                    className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${n.read ? "bg-card" : "bg-card border-primary/30"}`}
+                  >
+                    <span className="text-2xl mt-0.5 shrink-0">{approved ? "✅" : "❌"}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm">
+                        {approved ? "Check-in aprovado!" : "Check-in reprovado"}
+                      </p>
+                      {n.checkin && (
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                          {n.checkin.target.name} · {n.checkin.challenge.name}
+                        </p>
+                      )}
+                      {!approved && n.checkin?.rejection_reason && (
+                        <p className="text-xs text-destructive mt-1">{n.checkin.rejection_reason}</p>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0 mt-0.5">
+                      {new Date(n.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
         )}
 
         {followRequests.length > 0 && (
