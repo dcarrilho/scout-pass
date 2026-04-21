@@ -14,9 +14,25 @@ export async function toggleReaction(checkInId: string) {
   if (existing) {
     await prisma.reaction.delete({ where: { id: existing.id } });
   } else {
+    const checkIn = await prisma.checkIn.findUnique({
+      where: { id: checkInId },
+      select: { user_id: true },
+    });
+
     await prisma.reaction.create({
       data: { user_id: session.userId, checkin_id: checkInId },
     });
+
+    if (checkIn && checkIn.user_id !== session.userId) {
+      await prisma.notification.create({
+        data: {
+          user_id: checkIn.user_id,
+          actor_id: session.userId,
+          type: "REACTION",
+          checkin_id: checkInId,
+        },
+      });
+    }
   }
 
   revalidatePath("/home");
@@ -30,9 +46,25 @@ export async function addComment(formData: FormData): Promise<void> {
 
   if (!checkInId || !content || content.length < 1 || content.length > 280) return;
 
+  const checkIn = await prisma.checkIn.findUnique({
+    where: { id: checkInId },
+    select: { user_id: true },
+  });
+
   await prisma.comment.create({
     data: { user_id: session.userId, checkin_id: checkInId, content },
   });
+
+  if (checkIn && checkIn.user_id !== session.userId) {
+    await prisma.notification.create({
+      data: {
+        user_id: checkIn.user_id,
+        actor_id: session.userId,
+        type: "COMMENT",
+        checkin_id: checkInId,
+      },
+    });
+  }
 
   revalidatePath("/home");
 }

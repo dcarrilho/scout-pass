@@ -14,15 +14,19 @@ export async function followUser(targetUserId: string) {
   });
   if (!target) return;
 
+  const status = target.is_private ? "PENDING" : "ACCEPTED";
+
   await prisma.follow.upsert({
     where: { follower_id_following_id: { follower_id: session.userId, following_id: targetUserId } },
-    create: {
-      follower_id: session.userId,
-      following_id: targetUserId,
-      status: target.is_private ? "PENDING" : "ACCEPTED",
-    },
+    create: { follower_id: session.userId, following_id: targetUserId, status },
     update: {},
   });
+
+  if (!target.is_private) {
+    await prisma.notification.create({
+      data: { user_id: targetUserId, actor_id: session.userId, type: "NEW_FOLLOWER" },
+    });
+  }
 
   revalidatePath(`/perfil/${target.username}`);
 }
@@ -45,9 +49,18 @@ export async function unfollowUser(targetUserId: string) {
 export async function acceptFollow(followId: string) {
   const session = await verifySession();
 
-  await prisma.follow.update({
+  const follow = await prisma.follow.update({
     where: { id: followId, following_id: session.userId },
     data: { status: "ACCEPTED" },
+    select: { follower_id: true },
+  });
+
+  await prisma.notification.create({
+    data: {
+      user_id: follow.follower_id,
+      actor_id: session.userId,
+      type: "FOLLOW_ACCEPTED",
+    },
   });
 
   revalidatePath("/notificacoes");
@@ -86,6 +99,8 @@ export async function sendGarupaInvite(formData: FormData): Promise<void> {
     data: { piloto_id: session.userId, garupa_id: target.id },
   });
 
+  // GARUPA_INVITE é visível via PilotoGarupa pendente na página de notificações
+
   revalidatePath("/notificacoes");
   revalidatePath(`/perfil/${targetUsername}`);
 }
@@ -93,9 +108,18 @@ export async function sendGarupaInvite(formData: FormData): Promise<void> {
 export async function acceptGarupaLink(linkId: string) {
   const session = await verifySession();
 
-  await prisma.pilotoGarupa.update({
+  const link = await prisma.pilotoGarupa.update({
     where: { id: linkId, garupa_id: session.userId },
     data: { status: "ACCEPTED" },
+    select: { piloto_id: true },
+  });
+
+  await prisma.notification.create({
+    data: {
+      user_id: link.piloto_id,
+      actor_id: session.userId,
+      type: "GARUPA_ACCEPTED",
+    },
   });
 
   revalidatePath("/notificacoes");

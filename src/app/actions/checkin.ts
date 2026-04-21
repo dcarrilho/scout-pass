@@ -73,6 +73,23 @@ export async function submitCheckIn(
     return { error: "Erro ao enviar foto. Tente novamente." };
   }
 
+  const challengeInfo = await prisma.challenge.findUnique({
+    where: { id: challengeId },
+    select: { moderation_mode: true, moderators: { select: { user_id: true } } },
+  });
+
+  if (challengeInfo?.moderation_mode === "PRIVATE" && challengeInfo.moderators.length > 0) {
+    await prisma.notification.createMany({
+      data: challengeInfo.moderators.map((m) => ({
+        user_id: m.user_id,
+        actor_id: session.userId,
+        type: "CHECKIN_PENDING_REVIEW" as const,
+        checkin_id: checkIn.id,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
   revalidatePath(`/desafios/${challengeId}`);
   redirect(`/desafios/${challengeId}?enviado=1`);
 }
