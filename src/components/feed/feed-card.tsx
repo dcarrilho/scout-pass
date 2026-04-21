@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { toggleReaction, addComment, deleteComment } from "@/app/actions/feed";
@@ -27,9 +27,21 @@ export type FeedCheckin = {
 
 export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; currentUserId: string }) {
   const [expanded, setExpanded] = useState(false);
+  const [reacted, setReacted] = useState(
+    checkin.reactions.some((r) => r.user_id === currentUserId)
+  );
+  const [reactionCount, setReactionCount] = useState(checkin.reactions.length);
+  const [bump, setBump] = useState(false);
+  const [, startTransition] = useTransition();
 
-  const reacted = checkin.reactions.some((r) => r.user_id === currentUserId);
-  const reactionCount = checkin.reactions.length;
+  const handleReaction = () => {
+    const next = !reacted;
+    setReacted(next);
+    setReactionCount((c) => c + (next ? 1 : -1));
+    setBump(true);
+    setTimeout(() => setBump(false), 300);
+    startTransition(() => toggleReaction(checkin.id));
+  };
   const commentCount = checkin.comments.length;
   const hiddenCount = commentCount - MAX_COLLAPSED;
   const visibleComments = expanded ? checkin.comments : checkin.comments.slice(-MAX_COLLAPSED);
@@ -64,17 +76,23 @@ export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; cur
 
       {/* Ações */}
       <div className="px-4 pt-2 pb-1 flex items-center gap-3">
-        <form action={toggleReaction.bind(null, checkin.id)}>
-          <button
-            type="submit"
-            className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-              reacted ? "text-primary" : "text-muted-foreground hover:text-foreground"
-            }`}
+        <button
+          type="button"
+          onClick={handleReaction}
+          className={`flex items-center gap-1.5 text-sm font-medium transition-colors select-none ${
+            reacted ? "text-orange-500" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <span
+            className="text-base transition-transform duration-150"
+            style={{ transform: bump ? "scale(1.35)" : "scale(1)" }}
           >
-            <span className="text-base">🏍️</span>
-            {reactionCount > 0 && <span>{reactionCount}</span>}
-          </button>
-        </form>
+            🏍️
+          </span>
+          <span className="tabular-nums w-4 text-left">
+            {reactionCount > 0 ? reactionCount : ""}
+          </span>
+        </button>
 
         <button
           type="button"
