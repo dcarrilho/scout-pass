@@ -43,13 +43,14 @@ prisma/schema.prisma
 
 ## Funcionalidades implementadas
 - Auth (cadastro, login, logout, proteção de rotas via middleware)
-- Perfil (avatar, bio, garagem, edição)
+- Perfil (avatar, bio, garagem, edição, mural de medalhas 🏆/🎯)
 - Desafios (catálogo, série, organização, CRUD via admin)
 - Check-in (upload para Supabase Storage, EXIF, status PENDING)
 - Social (follow/unfollow, busca de usuários)
 - Notificações (`/notificacoes`): solicitações de follow, convites Piloto/Garupa, aprovação/reprovação de check-in
 - Moderação (`/moderacao`): fila de pendências, aprovar/reprovar
-- Feed (`/home`): check-ins aprovados recentes
+- Feed (`/home`): check-ins aprovados, curtidas 🏍️ (toggle), comentários inline
+- PWA: manifest, meta tags Apple Web App, componente `InstallPrompt` (beforeinstallprompt)
 
 ## Padrão de testes
 ```ts
@@ -61,8 +62,10 @@ vi.mock("@/lib/dal", () => ({ verifySession: vi.fn() }))
 - Mock do `revalidatePath` é automático (configurado em `src/test/setup.ts`)
 
 ## Próximas funcionalidades planejadas (PRD §11)
-- Curtidas com ícone temático e comentários nos posts do feed
-- Posts automáticos de gamificação (marcos de progresso)
-- Mural de medalhas no perfil
-- PWA prompt "Adicionar à Tela Inicial"
+- Posts automáticos de gamificação (marcos de progresso no feed)
 - Mapa de calor de municípios conquistados (longo prazo)
+- Vínculo Piloto/Garupa (schema existe, UI de convite no perfil pendente)
+
+## Ícones PWA pendentes
+Adicionar `/public/icons/icon-192.png` e `/public/icons/icon-512.png`
+para o prompt de instalação funcionar no Chrome.
