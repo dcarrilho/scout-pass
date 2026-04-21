@@ -22,25 +22,19 @@ export async function toggleReaction(checkInId: string) {
   revalidatePath("/home");
 }
 
-export async function addComment(
-  _: unknown,
-  formData: FormData
-): Promise<{ error?: string }> {
+export async function addComment(formData: FormData): Promise<void> {
   const session = await verifySession();
 
   const checkInId = formData.get("checkin_id") as string;
   const content = (formData.get("content") as string)?.trim();
 
-  if (!checkInId) return { error: "Check-in inválido." };
-  if (!content || content.length < 1) return { error: "Comentário não pode ser vazio." };
-  if (content.length > 280) return { error: "Máximo de 280 caracteres." };
+  if (!checkInId || !content || content.length < 1 || content.length > 280) return;
 
   await prisma.comment.create({
     data: { user_id: session.userId, checkin_id: checkInId, content },
   });
 
   revalidatePath("/home");
-  return {};
 }
 
 export async function deleteComment(commentId: string) {

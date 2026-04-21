@@ -60,34 +60,33 @@ describe("addComment", () => {
     return f;
   }
 
-  it("retorna erro quando checkin_id está vazio", async () => {
+  it("não cria comentário quando checkin_id está vazio", async () => {
     mockVerify.mockResolvedValue(session);
-    const result = await addComment(undefined, fd("", "ótimo check-in!"));
-    expect(result.error).toBe("Check-in inválido.");
+    await addComment(fd("", "ótimo check-in!"));
+    expect(mockCommentCreate).not.toHaveBeenCalled();
   });
 
-  it("retorna erro quando conteúdo está vazio", async () => {
+  it("não cria comentário quando conteúdo está vazio", async () => {
     mockVerify.mockResolvedValue(session);
-    const result = await addComment(undefined, fd("checkin-1", "  "));
-    expect(result.error).toBe("Comentário não pode ser vazio.");
+    await addComment(fd("checkin-1", "  "));
+    expect(mockCommentCreate).not.toHaveBeenCalled();
   });
 
-  it("retorna erro quando conteúdo excede 280 caracteres", async () => {
+  it("não cria comentário quando conteúdo excede 280 caracteres", async () => {
     mockVerify.mockResolvedValue(session);
-    const result = await addComment(undefined, fd("checkin-1", "a".repeat(281)));
-    expect(result.error).toBe("Máximo de 280 caracteres.");
+    await addComment(fd("checkin-1", "a".repeat(281)));
+    expect(mockCommentCreate).not.toHaveBeenCalled();
   });
 
   it("cria comentário e revalida", async () => {
     mockVerify.mockResolvedValue(session);
     mockCommentCreate.mockResolvedValue({} as any);
 
-    const result = await addComment(undefined, fd("checkin-1", "Que conquista!"));
+    await addComment(fd("checkin-1", "Que conquista!"));
 
     expect(mockCommentCreate).toHaveBeenCalledWith({
       data: { user_id: "u1", checkin_id: "checkin-1", content: "Que conquista!" },
     });
-    expect(result.error).toBeUndefined();
     expect(mockRevalidate).toHaveBeenCalledWith("/home");
   });
 });
