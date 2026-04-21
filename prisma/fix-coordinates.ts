@@ -1,6 +1,9 @@
 /**
- * Atualiza lat/lng de todos os ChallengeTargets do tipo CITY sem coordenadas.
- * Usa a API IBGE v3 malhas/metadados para centroides por estado (27 chamadas bulk).
+ * Atualiza lat/lng de todos os ChallengeTargets sem coordenadas nos desafios Valente.
+ * Estratégia:
+ *   1. Busca IDs IBGE dos municípios por estado via v1/localidades (27 chamadas bulk)
+ *   2. Faz match pelo nome do waypoint → IBGE code
+ *   3. Busca centroide via v3/malhas/municipios/{id}/metadados com concorrência limitada
  *
  * Uso: npx tsx prisma/fix-coordinates.ts
  */
@@ -14,90 +17,127 @@ const pool = new Pool({ connectionString: process.env.DIRECT_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-const STATE_IBGE_IDS: Record<string, number> = {
-  AC: 12, AL: 27, AP: 16, AM: 13, BA: 29, CE: 23, DF: 53, ES: 32,
-  GO: 52, MA: 21, MT: 51, MS: 50, MG: 31, PA: 15, PB: 25, PR: 41,
-  PE: 26, PI: 22, RJ: 33, RN: 24, RS: 43, RO: 11, RR: 14, SC: 42,
-  SP: 35, SE: 28, TO: 17,
-};
+const UF_CODES = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA",
+  "MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN",
+  "RS","RO","RR","SC","SP","SE","TO",
+];
 
-type CentroidMap = Record<string, { lat: number; lng: number }>;
+type IbgeMunicipio = { id: number; nome: string };
+type CentroidMap = Record<string, { lat: number; lng: number }>; // nome_lower → coords
 
-async function fetchStateCentroids(ibgeId: number): Promise<CentroidMap> {
-  const res = await fetch(
-    `https://servicodados.ibge.gov.br/api/v3/malhas/estados/${ibgeId}/municipios/metadados`
-  );
-  if (!res.ok) {
-    console.warn(`  ⚠️  IBGE API retornou ${res.status} para estado ${ibgeId}`);
-    return {};
+async function fetchMunicipios(uf: string): Promise<IbgeMunicipio[]> {
+  try {
+    const res = await fetch(
+      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`
+    );
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
   }
-  const data: { codarea: string; centroide: { coordinates: [number, number] } }[] = await res.json();
-  return Object.fromEntries(
-    data.map((m) => [m.codarea, { lng: m.centroide.coordinates[0], lat: m.centroide.coordinates[1] }])
-  );
 }
 
-async function fetchMunicipalityIds(uf: string): Promise<{ id: number; nome: string }[]> {
-  const res = await fetch(
-    `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`
-  );
-  return res.json();
+async function fetchCentroid(ibgeId: number): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const res = await fetch(
+      `https://servicodados.ibge.gov.br/api/v3/malhas/municipios/${ibgeId}/metadados`
+    );
+    if (!res.ok) return null;
+    const data: { centroide: { latitude: number; longitude: number } }[] = await res.json();
+    if (!data[0]?.centroide) return null;
+    return { lat: data[0].centroide.latitude, lng: data[0].centroide.longitude };
+  } catch {
+    return null;
+  }
+}
+
+async function pLimit<T>(tasks: (() => Promise<T>)[], concurrency: number): Promise<T[]> {
+  const results: T[] = [];
+  let i = 0;
+  async function worker() {
+    while (i < tasks.length) {
+      const idx = i++;
+      results[idx] = await tasks[idx]();
+    }
+  }
+  await Promise.all(Array.from({ length: concurrency }, worker));
+  return results;
 }
 
 async function main() {
   console.log("🗺️  Iniciando atualização de coordenadas...\n");
 
+  // 1. Buscar todos os desafios com state_code
   const challenges = await prisma.challenge.findMany({
     where: { state_code: { not: null } },
     select: { id: true, name: true, state_code: true },
   });
+  console.log(`${challenges.length} desafios encontrados.\n`);
 
-  console.log(`${challenges.length} desafios Valente encontrados.\n`);
+  // 2. Buscar municípios de todos os estados em paralelo
+  process.stdout.write("Carregando municípios do IBGE para todos os estados... ");
+  const ufMunicipios = await Promise.all(
+    UF_CODES.map(async (uf) => ({ uf, municipios: await fetchMunicipios(uf) }))
+  );
+  const byUf: Record<string, IbgeMunicipio[]> = {};
+  for (const { uf, municipios } of ufMunicipios) byUf[uf] = municipios;
+  console.log("OK\n");
 
   let totalUpdated = 0;
   let totalSkipped = 0;
 
   for (const challenge of challenges) {
     const uf = challenge.state_code!;
-    const ibgeId = STATE_IBGE_IDS[uf];
-    if (!ibgeId) { console.warn(`UF desconhecida: ${uf}`); continue; }
+    const municipios = byUf[uf] ?? [];
 
-    process.stdout.write(`[${uf}] Buscando centroides... `);
+    // Monta mapa nome_lower → IBGE id
+    const nameToId: Record<string, number> = {};
+    for (const m of municipios) nameToId[m.nome.toLowerCase()] = m.id;
 
-    const [municipios, centroids] = await Promise.all([
-      fetchMunicipalityIds(uf),
-      fetchStateCentroids(ibgeId),
-    ]);
-
-    // Monta mapa nome → coordenadas (fallback por nome quando IBGE ID não bate)
-    const coordsByName: Record<string, { lat: number; lng: number }> = {};
-    for (const m of municipios) {
-      const c = centroids[String(m.id)];
-      if (c) coordsByName[m.nome.toLowerCase()] = c;
-    }
-
+    // Buscar waypoints sem coordenadas
     const targets = await prisma.challengeTarget.findMany({
       where: { challenge_id: challenge.id, latitude: null },
       select: { id: true, name: true },
     });
 
-    let updated = 0;
-    for (const target of targets) {
-      const coords = coordsByName[target.name.toLowerCase()];
-      if (!coords) { totalSkipped++; continue; }
+    if (targets.length === 0) {
+      console.log(`[${uf}] ${challenge.name}: todos já têm coordenadas.`);
+      continue;
+    }
 
+    process.stdout.write(`[${uf}] ${challenge.name}: ${targets.length} waypoints → `);
+
+    // Faz match nome → IBGE id, ignorando os sem match
+    const matched = targets
+      .map((t) => ({ target: t, ibgeId: nameToId[t.name.toLowerCase()] }))
+      .filter((x) => x.ibgeId != null);
+
+    totalSkipped += targets.length - matched.length;
+
+    if (matched.length === 0) {
+      console.log("0 matches.");
+      continue;
+    }
+
+    // Busca centroides com concorrência de 30
+    const centroidTasks = matched.map(({ target, ibgeId }) => async () => {
+      const coords = await fetchCentroid(ibgeId);
+      if (!coords) return null;
       await prisma.challengeTarget.update({
         where: { id: target.id },
         data: { latitude: coords.lat, longitude: coords.lng },
       });
-      updated++;
-      totalUpdated++;
-    }
+      return coords;
+    });
 
-    console.log(`${updated}/${targets.length} atualizados.`);
+    const results = await pLimit(centroidTasks, 30);
+    const updated = results.filter(Boolean).length;
+    totalUpdated += updated;
+    console.log(`${updated}/${matched.length} atualizados.`);
   }
 
-  console.log(`\n✅ Concluído: ${totalUpdated} coordenadas adicionadas, ${totalSkipped} sem match.`);
+  console.log(`\n✅ Concluído: ${totalUpdated} coordenadas adicionadas, ${totalSkipped} sem match de nome.`);
 }
 
 main()
