@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { FeedCard } from "@/components/feed/feed-card";
-import { FeedToggle } from "@/components/feed/feed-toggle";
 import { LoadMore } from "@/components/feed/load-more";
 
 const DEFAULT_TAKE = 10;
@@ -10,27 +9,14 @@ const DEFAULT_TAKE = 10;
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; take?: string }>;
+  searchParams: Promise<{ take?: string }>;
 }) {
   const session = await verifySession();
-  const { filter, take: takeParam } = await searchParams;
+  const { take: takeParam } = await searchParams;
   const take = Math.min(Number(takeParam) || DEFAULT_TAKE, 100);
-  const isFollowing = filter === "following";
-
-  let followingIds: string[] = [];
-  if (isFollowing) {
-    const follows = await prisma.follow.findMany({
-      where: { follower_id: session.userId, status: "ACCEPTED" },
-      select: { following_id: true },
-    });
-    followingIds = follows.map((f) => f.following_id);
-  }
 
   const rows = await prisma.checkIn.findMany({
-    where: {
-      status: "APPROVED",
-      ...(isFollowing ? { user_id: { in: followingIds } } : {}),
-    },
+    where: { status: "APPROVED" },
     include: {
       user: { select: { name: true, username: true, avatar_url: true } },
       challenge: { select: { name: true } },
@@ -51,18 +37,10 @@ export default async function HomePage({
   return (
     <main className="max-w-lg mx-auto">
       <div className="py-4 px-4 space-y-5">
-        <Suspense>
-          <FeedToggle />
-        </Suspense>
-
         {checkIns.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
             <span className="text-5xl">🏍️</span>
-            <p className="font-semibold text-lg">
-              {isFollowing
-                ? "Ninguém que você segue fez check-in ainda"
-                : "Nenhuma conquista ainda"}
-            </p>
+            <p className="font-semibold text-lg">Nenhuma conquista ainda</p>
             <p className="text-sm text-muted-foreground">
               Seja o primeiro a completar um check-in!
             </p>
