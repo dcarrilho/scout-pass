@@ -67,8 +67,16 @@ export default async function DesafiosPage() {
   return (
     <main className="min-h-screen max-w-2xl mx-auto">
       <div className="pt-6 space-y-8">
-        <div className="px-4">
+        <div className="px-4 flex items-center justify-between">
           <h1 className="text-xl font-bold">Desafios</h1>
+          {(session.role === "MODERATOR" || session.role === "ADMIN") && (
+            <Link
+              href="/desafios/nova-organizacao"
+              className="rounded-full border border-primary text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              + Organização
+            </Link>
+          )}
         </div>
 
         {/* Quick-nav chip strip */}

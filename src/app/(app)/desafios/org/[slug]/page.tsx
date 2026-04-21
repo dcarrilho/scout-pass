@@ -11,6 +11,8 @@ export default async function OrganizerPage({ params }: Props) {
   const session = await verifySession();
   const { slug } = await params;
 
+  const isMod = session.role === "MODERATOR" || session.role === "ADMIN";
+
   const org = await prisma.organizer.findUnique({
     where: { slug },
     include: {
@@ -92,6 +94,24 @@ export default async function OrganizerPage({ params }: Props) {
             <p className="text-xs text-muted-foreground">
               {totalDone} de {totalTargets} waypoints · {allChallengesFlat.length} desafios
             </p>
+          </div>
+        )}
+
+        {/* Series management */}
+        {isMod && (
+          <div className="flex gap-2">
+            <Link
+              href={`/desafios/org/${slug}/nova-serie`}
+              className="rounded-full border border-primary text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              + Nova série
+            </Link>
+            <Link
+              href={`/desafios/org/${slug}/adicionar-serie`}
+              className="rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-muted transition-colors"
+            >
+              Adicionar série existente
+            </Link>
           </div>
         )}
 

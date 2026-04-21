@@ -42,6 +42,7 @@ export default async function SeriesPage({ params }: Props) {
   }).length;
 
   const color = getSeriesColor(series.color);
+  const isMod = session.role === "MODERATOR" || session.role === "ADMIN";
 
   return (
     <main className="min-h-screen max-w-2xl mx-auto">
@@ -84,6 +85,24 @@ export default async function SeriesPage({ params }: Props) {
           </div>
           <p className="text-xs text-muted-foreground">{totalDone} de {totalTargets} waypoints visitados</p>
         </div>
+
+        {/* Challenge management */}
+        {isMod && (
+          <div className="flex gap-2">
+            <Link
+              href={`/desafios/serie/${id}/novo-desafio`}
+              className="rounded-full border border-primary text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              + Novo desafio
+            </Link>
+            <Link
+              href={`/desafios/serie/${id}/adicionar-desafio`}
+              className="rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-muted transition-colors"
+            >
+              Adicionar existente
+            </Link>
+          </div>
+        )}
 
         {/* Challenge list */}
         <div className="grid gap-3">

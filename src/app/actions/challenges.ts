@@ -1,0 +1,162 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import { verifyModerator } from "@/lib/dal";
+
+function slugify(str: string) {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+async function uniqueSlug(base: string) {
+  let slug = slugify(base);
+  let n = 0;
+  while (await prisma.organizer.findUnique({ where: { slug } })) {
+    slug = `${slugify(base)}-${++n}`;
+  }
+  return slug;
+}
+
+// ─── Organizer ────────────────────────────────────────────────────────────────
+
+const OrganizerSchema = z.object({
+  name: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
+  description: z.string().optional(),
+});
+
+type OrgState = { errors?: Record<string, string[]>; message?: string } | undefined;
+
+export async function createOrganizer(state: OrgState, formData: FormData): Promise<OrgState> {
+  await verifyModerator();
+
+  const parsed = OrganizerSchema.safeParse({
+    name: formData.get("name"),
+    description: formData.get("description") || undefined,
+  });
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+
+  const slug = await uniqueSlug(parsed.data.name);
+  await prisma.organizer.create({
+    data: { name: parsed.data.name, slug, description: parsed.data.description },
+  });
+
+  revalidatePath("/desafios");
+  redirect("/desafios");
+}
+
+// ─── Series ───────────────────────────────────────────────────────────────────
+
+const SeriesSchema = z.object({
+  name: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
+  description: z.string().optional(),
+  icon: z.string().optional(),
+  color: z.string().optional(),
+  organizer_id: z.string().optional(),
+});
+
+type SeriesState = { errors?: Record<string, string[]>; message?: string } | undefined;
+
+export async function createSeries(state: SeriesState, formData: FormData): Promise<SeriesState> {
+  await verifyModerator();
+
+  const parsed = SeriesSchema.safeParse({
+    name: formData.get("name"),
+    description: formData.get("description") || undefined,
+    icon: formData.get("icon") || undefined,
+    color: formData.get("color") || undefined,
+    organizer_id: formData.get("organizer_id") || undefined,
+  });
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+
+  const series = await prisma.series.create({
+    data: {
+      name: parsed.data.name,
+      description: parsed.data.description,
+      icon: parsed.data.icon,
+      color: parsed.data.color,
+      organizer_id: parsed.data.organizer_id ?? null,
+    },
+    include: { organizer: { select: { slug: true } } },
+  });
+
+  if (series.organizer) {
+    revalidatePath(`/desafios/org/${series.organizer.slug}`);
+    redirect(`/desafios/org/${series.organizer.slug}`);
+  }
+  revalidatePath("/desafios");
+  redirect("/desafios");
+}
+
+export async function linkSeriesToOrg(seriesId: string, orgSlug: string) {
+  await verifyModerator();
+  const org = await prisma.organizer.findUnique({ where: { slug: orgSlug } });
+  if (!org) return;
+  await prisma.series.update({ where: { id: seriesId }, data: { organizer_id: org.id } });
+  revalidatePath(`/desafios/org/${orgSlug}`);
+  redirect(`/desafios/org/${orgSlug}`);
+}
+
+// ─── Challenge ────────────────────────────────────────────────────────────────
+
+const ChallengeSchema = z.object({
+  name: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
+  description: z.string().optional(),
+  state_code: z.string().optional(),
+  series_id: z.string().optional(),
+});
+
+type ChallengeState = { errors?: Record<string, string[]>; message?: string } | undefined;
+
+export async function createChallenge(
+  state: ChallengeState,
+  formData: FormData
+): Promise<ChallengeState> {
+  await verifyModerator();
+
+  const parsed = ChallengeSchema.safeParse({
+    name: formData.get("name"),
+    description: formData.get("description") || undefined,
+    state_code: formData.get("state_code") || undefined,
+    series_id: formData.get("series_id") || undefined,
+  });
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+
+  const seriesId = parsed.data.series_id;
+
+  let organizer_id: string | null = null;
+  if (seriesId) {
+    const series = await prisma.series.findUnique({ where: { id: seriesId }, select: { organizer_id: true } });
+    organizer_id = series?.organizer_id ?? null;
+  }
+
+  await prisma.challenge.create({
+    data: {
+      name: parsed.data.name,
+      description: parsed.data.description,
+      state_code: parsed.data.state_code,
+      series_id: seriesId ?? null,
+      organizer_id,
+    },
+  });
+
+  if (seriesId) {
+    revalidatePath(`/desafios/serie/${seriesId}`);
+    redirect(`/desafios/serie/${seriesId}`);
+  }
+  revalidatePath("/desafios");
+  redirect("/desafios");
+}
+
+export async function linkChallengeToSeries(challengeId: string, seriesId: string) {
+  await verifyModerator();
+  await prisma.challenge.update({ where: { id: challengeId }, data: { series_id: seriesId } });
+  revalidatePath(`/desafios/serie/${seriesId}`);
+  redirect(`/desafios/serie/${seriesId}`);
+}
