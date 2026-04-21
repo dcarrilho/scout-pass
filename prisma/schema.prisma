@@ -60,6 +60,8 @@ model User {
   piloto_links      PilotoGarupa[] @relation("Piloto")
   garupa_links      PilotoGarupa[] @relation("Garupa")
   notifications     Notification[]
+  reactions         Reaction[]
+  comments          Comment[]
   created_at        DateTime       @default(now())
   updated_at        DateTime       @updatedAt
 }
@@ -181,6 +183,29 @@ model CheckIn {
   reviewed_at      DateTime?
   submitted_at     DateTime        @default(now())
   notifications    Notification[]
+  reactions        Reaction[]
+  comments         Comment[]
+}
+
+model Reaction {
+  id         String   @id @default(cuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  checkin_id String
+  checkin    CheckIn  @relation(fields: [checkin_id], references: [id], onDelete: Cascade)
+  created_at DateTime @default(now())
+
+  @@unique([user_id, checkin_id])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  checkin_id String
+  checkin    CheckIn  @relation(fields: [checkin_id], references: [id], onDelete: Cascade)
+  content    String
+  created_at DateTime @default(now())
 }
 
 model Notification {
