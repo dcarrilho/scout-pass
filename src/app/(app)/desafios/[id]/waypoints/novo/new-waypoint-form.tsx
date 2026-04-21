@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { createTarget } from "@/app/actions/targets";
-import { DarkField, DarkInput, DarkSelect, DarkSubmit, FormError } from "@/components/ui/dark-form";
+import { DarkField, DarkInput, DarkSubmit, FormError } from "@/components/ui/dark-form";
 import { CityPicker } from "@/components/challenges/city-picker";
 
 const TARGET_TYPES = [
@@ -24,15 +24,23 @@ export function NewWaypointForm({ challengeId }: { challengeId: string }) {
         <DarkInput name="name" placeholder="Ex: Tiradentes" autoFocus />
       </DarkField>
 
-      <DarkField label="Tipo">
-        <DarkSelect name="type" defaultValue="CITY">
-          {TARGET_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </DarkSelect>
-      </DarkField>
-
       <CityPicker />
+
+      <DarkField label="Tipo">
+        <div className="flex flex-wrap gap-2">
+          {TARGET_TYPES.map((t) => (
+            <label key={t.value} className="cursor-pointer">
+              <input type="radio" name="type" value={t.value} defaultChecked={t.value === "CITY"} className="sr-only peer" />
+              <span
+                className="inline-block px-3 py-1.5 rounded-full text-sm font-medium transition-colors peer-checked:bg-orange-500 peer-checked:text-white"
+                style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.55)" }}
+              >
+                {t.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      </DarkField>
 
       <DarkField label="Ordem" hint="Número para ordenação na lista">
         <DarkInput name="order" type="number" defaultValue="0" />
