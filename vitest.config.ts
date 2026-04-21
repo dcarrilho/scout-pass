@@ -25,6 +25,7 @@ export default defineConfig({
         "src/app/actions/moderation.ts",
         "src/app/actions/profile.ts",
         "src/app/actions/social.ts",
+        "src/app/actions/challenges.ts",
       ],
       thresholds: {
         lines: 100,
