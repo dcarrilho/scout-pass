@@ -2,7 +2,6 @@ import Link from "next/link";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
-import { getSeriesColor } from "@/lib/challenge-colors";
 
 export default async function DesafiosPage() {
   const session = await verifySession();
@@ -61,17 +60,9 @@ export default async function DesafiosPage() {
     return { count: challenges.length, total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
   }
 
-  function seriesStats(seriesId: string) {
-    const challenges = bySeries[seriesId] ?? [];
-    const total = challenges.reduce((s, c) => s + c._count.targets, 0);
-    const done = challenges.reduce((s, c) => s + (progressMap[c.id] ?? 0), 0);
-    return { count: challenges.length, total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
-  }
+  const isEmpty = organizers.length === 0 && standalone.length === 0;
 
-  const standaloneSeries = allSeries.filter((s) => !s.organizer_id);
-  const isEmpty = organizers.length === 0 && standaloneSeries.length === 0 && standalone.length === 0;
-
-  const hasQuickNav = organizers.length + allSeries.length > 1;
+  const hasQuickNav = organizers.length > 1;
 
   return (
     <main className="min-h-screen max-w-2xl mx-auto">
@@ -94,16 +85,6 @@ export default async function DesafiosPage() {
                   : <span className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">{org.name[0]}</span>
                 }
                 {org.name}
-              </Link>
-            ))}
-            {allSeries.map((s) => (
-              <Link
-                key={s.id}
-                href={`/desafios/serie/${s.id}`}
-                className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium whitespace-nowrap shrink-0 hover:bg-muted transition-colors"
-              >
-                {s.icon && <span>{s.icon}</span>}
-                {s.name}
               </Link>
             ))}
           </div>
@@ -148,42 +129,6 @@ export default async function DesafiosPage() {
                         <div className="space-y-1">
                           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                             <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
-                          </div>
-                          <p className="text-xs text-muted-foreground">{done} de {total} waypoints · {pct}%</p>
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* Standalone Series */}
-        {standaloneSeries.length > 0 && (
-          <section className="space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Séries</p>
-            <div className="grid gap-3">
-              {standaloneSeries.map((series) => {
-                const color = getSeriesColor(series.color);
-                const { pct, count, done, total } = seriesStats(series.id);
-                return (
-                  <Link key={series.id} href={`/desafios/serie/${series.id}`}>
-                    <div className="rounded-xl border bg-card p-4 space-y-3 hover:shadow-md active:scale-[0.99] transition-all">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          {series.icon && <span className="text-xl">{series.icon}</span>}
-                          <p className="font-semibold text-sm">{series.name}</p>
-                        </div>
-                        <span className={cn("text-xs font-semibold rounded-full px-2 py-0.5 shrink-0", color.badge)}>
-                          {count} desafios
-                        </span>
-                      </div>
-                      {total > 0 && (
-                        <div className="space-y-1">
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div className={cn("h-full rounded-full", color.progress)} style={{ width: `${pct}%` }} />
                           </div>
                           <p className="text-xs text-muted-foreground">{done} de {total} waypoints · {pct}%</p>
                         </div>
