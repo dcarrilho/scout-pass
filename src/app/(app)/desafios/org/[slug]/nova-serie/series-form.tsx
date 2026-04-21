@@ -2,15 +2,16 @@
 
 import { useActionState } from "react";
 import { createSeries } from "@/app/actions/challenges";
+import { DarkField, DarkInput, DarkTextarea, DarkSubmit, FormError } from "@/components/ui/dark-form";
 
 const COLORS = [
-  { key: "blue",    label: "Azul",     dot: "bg-blue-500" },
-  { key: "amber",   label: "Âmbar",    dot: "bg-amber-500" },
-  { key: "purple",  label: "Roxo",     dot: "bg-purple-500" },
-  { key: "emerald", label: "Verde",    dot: "bg-emerald-500" },
-  { key: "orange",  label: "Laranja",  dot: "bg-orange-500" },
-  { key: "rose",    label: "Rosa",     dot: "bg-rose-500" },
-  { key: "slate",   label: "Cinza",    dot: "bg-slate-500" },
+  { key: "blue",    label: "Azul",    dot: "#3b82f6" },
+  { key: "amber",   label: "Âmbar",   dot: "#f59e0b" },
+  { key: "purple",  label: "Roxo",    dot: "#a855f7" },
+  { key: "emerald", label: "Verde",   dot: "#10b981" },
+  { key: "orange",  label: "Laranja", dot: "#f97316" },
+  { key: "rose",    label: "Rosa",    dot: "#f43f5e" },
+  { key: "slate",   label: "Cinza",   dot: "#64748b" },
 ];
 
 type Props = { organizerId: string };
@@ -22,35 +23,25 @@ export function SeriesForm({ organizerId }: Props) {
     <form action={action} className="space-y-4">
       <input type="hidden" name="organizer_id" value={organizerId} />
 
-      <div className="space-y-1.5">
-        <label className="text-sm font-medium">Nome *</label>
-        <input
-          name="name"
-          placeholder="Ex: Série Valente"
-          className="w-full rounded-xl border bg-card px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-        />
-        {state?.errors?.name && (
-          <p className="text-xs text-destructive">{state.errors.name[0]}</p>
-        )}
-      </div>
+      <DarkField label="Nome *" error={state?.errors?.name?.[0]}>
+        <DarkInput name="name" placeholder="Ex: Série Valente" />
+      </DarkField>
 
-      <div className="space-y-1.5">
-        <label className="text-sm font-medium">Ícone (emoji)</label>
-        <input
-          name="icon"
-          placeholder="Ex: 🏍️"
-          className="w-full rounded-xl border bg-card px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-        />
-      </div>
+      <DarkField label="Ícone (emoji)">
+        <DarkInput name="icon" placeholder="Ex: 🏍️" />
+      </DarkField>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Cor</label>
+        <label className="text-sm font-medium text-white/75">Cor</label>
         <div className="flex flex-wrap gap-2">
           {COLORS.map((c) => (
             <label key={c.key} className="flex items-center gap-1.5 cursor-pointer">
               <input type="radio" name="color" value={c.key} className="sr-only peer" defaultChecked={c.key === "blue"} />
-              <span className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium peer-checked:border-primary peer-checked:bg-primary/10 transition-colors">
-                <span className={`w-2.5 h-2.5 rounded-full ${c.dot}`} />
+              <span
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all peer-checked:ring-2 peer-checked:ring-[#f97316]"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
+              >
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.dot }} />
                 {c.label}
               </span>
             </label>
@@ -58,27 +49,12 @@ export function SeriesForm({ organizerId }: Props) {
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <label className="text-sm font-medium">Descrição</label>
-        <textarea
-          name="description"
-          rows={3}
-          placeholder="Breve descrição da série..."
-          className="w-full rounded-xl border bg-card px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/50 resize-none"
-        />
-      </div>
+      <DarkField label="Descrição">
+        <DarkTextarea name="description" rows={3} placeholder="Breve descrição da série..." />
+      </DarkField>
 
-      {state?.message && (
-        <p className="text-sm text-destructive">{state.message}</p>
-      )}
-
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-xl bg-primary text-primary-foreground py-3 text-sm font-semibold disabled:opacity-60 transition-opacity"
-      >
-        {pending ? "Criando..." : "Criar série"}
-      </button>
+      <FormError message={state?.message} />
+      <DarkSubmit pending={pending} label="Criar série" pendingLabel="Criando..." />
     </form>
   );
 }

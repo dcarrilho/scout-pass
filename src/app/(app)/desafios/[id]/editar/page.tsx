@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { verifyModerator } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { EditChallengeForm } from "./edit-challenge-form";
@@ -18,13 +19,14 @@ export default async function EditarDesafioPage({ params }: Props) {
 
   return (
     <main className="min-h-screen max-w-2xl mx-auto">
-      <div className="px-4 pt-6 pb-2">
-        <Link href={`/desafios/${id}`} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-          ← {challenge.name}
+      <div className="px-4 pt-5 pb-2">
+        <Link href={`/desafios/${id}`} className="inline-flex items-center gap-1 text-sm text-white/45 hover:text-white/80 transition-colors">
+          <ChevronLeft className="size-4" />
+          {challenge.name}
         </Link>
       </div>
       <div className="px-4 py-4 space-y-6">
-        <h1 className="text-xl font-bold">Editar desafio</h1>
+        <h1 className="text-xl font-bold text-white">Editar desafio</h1>
         <EditChallengeForm id={id} name={challenge.name} description={challenge.description} state_code={challenge.state_code} />
       </div>
     </main>

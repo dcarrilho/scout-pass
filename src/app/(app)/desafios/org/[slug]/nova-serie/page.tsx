@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { verifyModerator } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { SeriesForm } from "./series-form";
@@ -15,17 +16,14 @@ export default async function NovaSeriesPage({ params }: Props) {
 
   return (
     <main className="min-h-screen max-w-2xl mx-auto">
-      <div className="px-4 pt-6 pb-2">
-        <Link
-          href={`/desafios/org/${slug}`}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← {org.name}
+      <div className="px-4 pt-5 pb-2">
+        <Link href={`/desafios/org/${slug}`} className="inline-flex items-center gap-1 text-sm text-white/45 hover:text-white/80 transition-colors">
+          <ChevronLeft className="size-4" />
+          {org.name}
         </Link>
       </div>
-
       <div className="px-4 py-4 space-y-6">
-        <h1 className="text-xl font-bold">Nova série</h1>
+        <h1 className="text-xl font-bold text-white">Nova série</h1>
         <SeriesForm organizerId={org.id} />
       </div>
     </main>

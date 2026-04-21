@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import WaypointList from "./waypoint-list";
@@ -46,78 +47,100 @@ export default async function DesafioDetailPage({ params, searchParams }: Props)
 
   return (
     <main className="min-h-screen max-w-2xl mx-auto">
-      <div className="px-4 pt-6 pb-2">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
-          <Link href="/desafios" className="hover:text-foreground transition-colors">Desafios</Link>
+
+      {/* Cover header */}
+      <div
+        className="relative px-4 pt-5 pb-6"
+        style={{
+          background: `
+            radial-gradient(ellipse at 10% 120%, rgba(249,115,22,0.18), transparent 55%),
+            repeating-linear-gradient(135deg, #1a1614 0 10px, #141210 10px 20px)
+          `,
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        {/* Back / breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm mb-5 flex-wrap">
+          <Link href="/desafios" className="inline-flex items-center gap-1 text-white/45 hover:text-white/80 transition-colors">
+            <ChevronLeft className="size-4" />
+            Desafios
+          </Link>
           {parentOrg && (
             <>
-              <span>/</span>
-              <Link href={`/desafios/org/${parentOrg.slug}`} className="hover:text-foreground transition-colors">
+              <span className="text-white/20">/</span>
+              <Link href={`/desafios/org/${parentOrg.slug}`} className="text-white/45 hover:text-white/80 transition-colors">
                 {parentOrg.name}
               </Link>
             </>
           )}
           {challenge.series && (
             <>
-              <span>/</span>
-              <Link href={`/desafios/serie/${challenge.series.id}`} className="hover:text-foreground transition-colors">
+              <span className="text-white/20">/</span>
+              <Link href={`/desafios/serie/${challenge.series.id}`} className="text-white/45 hover:text-white/80 transition-colors">
                 {challenge.series.name}
               </Link>
             </>
           )}
         </nav>
-      </div>
 
-      <div className="p-4 space-y-6">
-        {/* Header + progress */}
-        <div className="space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <h1 className="text-2xl font-bold leading-tight flex-1">{challenge.name}</h1>
-            {(session.role === "MODERATOR" || session.role === "ADMIN") && (
-              <Link
-                href={`/desafios/${id}/editar`}
-                className="rounded-full border px-2.5 py-0.5 text-xs font-medium hover:bg-muted transition-colors shrink-0 mt-1"
-              >
-                Editar
-              </Link>
-            )}
-          </div>
-          {challenge.description && (
-            <p className="text-sm text-muted-foreground">{challenge.description}</p>
+        {/* Title + edit */}
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-2xl font-bold text-white leading-tight flex-1">{challenge.name}</h1>
+          {(session.role === "MODERATOR" || session.role === "ADMIN") && (
+            <Link
+              href={`/desafios/${id}/editar`}
+              className="rounded-full px-2.5 py-0.5 text-[11px] font-medium text-white/50 hover:text-white transition-colors mt-1 shrink-0"
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
+            >
+              Editar
+            </Link>
           )}
-
-          <div className="rounded-2xl border bg-card p-4 space-y-2">
-            <div className="flex justify-between items-center text-sm">
-              <span className="font-semibold">
-                {isComplete ? "🏆 Desafio completo!" : `${done} de ${total} waypoints`}
-              </span>
-              <span className={isComplete ? "font-bold text-green-600 dark:text-green-400" : "text-muted-foreground"}>
-                {pct}%
-              </span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${isComplete ? "bg-green-500" : "bg-primary"}`}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            {pendingIds.length > 0 && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                {pendingIds.length} aguardando aprovação
-              </p>
-            )}
-          </div>
         </div>
 
+        {challenge.description && (
+          <p className="text-sm text-white/50 mt-1.5">{challenge.description}</p>
+        )}
+
+        {/* Progress */}
+        {total > 0 && (
+          <div className="mt-5 space-y-2">
+            <div className="flex items-end justify-between">
+              <div>
+                <span className="text-2xl font-bold" style={{ color: isComplete ? "#16a34a" : "#f97316" }}>
+                  {pct}%
+                </span>
+                <span className="text-xs text-white/40 ml-2">
+                  {isComplete ? "completo 🏆" : "concluído"}
+                </span>
+              </div>
+              <p className="text-xs text-white/40 pb-0.5">
+                {done} de {total} waypoints
+                {pendingIds.length > 0 && (
+                  <span style={{ color: "rgba(251,146,60,0.9)" }}> · {pendingIds.length} aguardando</span>
+                )}
+              </p>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${pct}%`, background: isComplete ? "#16a34a" : "#f97316" }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 py-5 space-y-5">
         {/* Check-in enviado banner */}
         {enviado && (
-          <div className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 px-4 py-3 text-sm text-green-800 dark:text-green-300">
-            Check-in enviado! Aguardando aprovação do moderador.
+          <div
+            className="rounded-xl px-4 py-3 text-sm font-medium"
+            style={{ background: "rgba(22,163,74,0.1)", border: "1px solid rgba(22,163,74,0.25)", color: "#16a34a" }}
+          >
+            ✓ Check-in enviado! Aguardando aprovação do moderador.
           </div>
         )}
 
-        {/* Waypoint list */}
         <WaypointList
           targets={challenge.targets.map((t) => ({ id: t.id, name: t.name }))}
           approvedIds={approvedIds}
