@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import WaypointList from "./waypoint-list";
+import { joinChallenge, leaveChallenge } from "@/app/actions/participation";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ enviado?: string }> };
 
@@ -23,7 +24,7 @@ export default async function DesafioDetailPage({ params, searchParams }: Props)
 
   if (!challenge) notFound();
 
-  const [approvedTargets, pendingTargets] = await Promise.all([
+  const [approvedTargets, pendingTargets, participation] = await Promise.all([
     prisma.checkIn.findMany({
       where: { user_id: session.userId, challenge_id: id, status: "APPROVED" },
       select: { target_id: true },
@@ -32,7 +33,12 @@ export default async function DesafioDetailPage({ params, searchParams }: Props)
       where: { user_id: session.userId, challenge_id: id, status: "PENDING" },
       select: { target_id: true },
     }),
+    prisma.challengeParticipant.findUnique({
+      where: { challenge_id_user_id: { challenge_id: id, user_id: session.userId } },
+    }),
   ]);
+
+  const isParticipant = !!participation;
 
   const approvedIds = approvedTargets.map((c) => c.target_id);
   const pendingIds = pendingTargets.map((c) => c.target_id);
@@ -159,6 +165,28 @@ export default async function DesafioDetailPage({ params, searchParams }: Props)
           </div>
         )}
 
+        {/* Participação */}
+        {!isParticipant ? (
+          <form action={joinChallenge.bind(null, id)}>
+            <button
+              type="submit"
+              className="w-full rounded-2xl py-3.5 text-sm font-bold transition-colors"
+              style={{ background: "#f97316", color: "#0c0a09" }}
+            >
+              Participar deste desafio
+            </button>
+          </form>
+        ) : (
+          <div className="flex items-center justify-between gap-3 rounded-xl px-4 py-2.5" style={{ background: "rgba(22,163,74,0.08)", border: "1px solid rgba(22,163,74,0.2)" }}>
+            <span className="text-sm font-medium" style={{ color: "#16a34a" }}>✓ Você está participando</span>
+            <form action={leaveChallenge.bind(null, id)}>
+              <button type="submit" className="text-xs text-white/30 hover:text-white/60 transition-colors">
+                Sair
+              </button>
+            </form>
+          </div>
+        )}
+
         {/* Check-in enviado banner */}
         {enviado && (
           <div
@@ -175,6 +203,7 @@ export default async function DesafioDetailPage({ params, searchParams }: Props)
           pendingIds={pendingIds}
           challengeId={id}
           isMod={isMod}
+          isParticipant={isParticipant}
         />
       </div>
     </main>

@@ -68,8 +68,9 @@ model User {
   notifications        Notification[]
   reactions            Reaction[]
   comments             Comment[]
-  moderated_challenges ChallengeModerator[]
-  created_at           DateTime             @default(now())
+  moderated_challenges  ChallengeModerator[]
+  challenge_participations ChallengeParticipant[]
+  created_at            DateTime             @default(now())
   updated_at           DateTime             @updatedAt
 }
 
@@ -151,11 +152,23 @@ model Challenge {
   state_code      String?
   cover_url       String?
   is_active       Boolean              @default(true)
-  moderation_mode ModerationMode       @default(PUBLIC)
-  targets         ChallengeTarget[]    @relation("ChallengeTargets")
+  moderation_mode ModerationMode         @default(PUBLIC)
+  targets         ChallengeTarget[]      @relation("ChallengeTargets")
   checkins        CheckIn[]
   moderators      ChallengeModerator[]
-  created_at      DateTime             @default(now())
+  participants    ChallengeParticipant[]
+  created_at      DateTime               @default(now())
+}
+
+model ChallengeParticipant {
+  id           String    @id @default(cuid())
+  challenge_id String
+  challenge    Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+  user_id      String
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  joined_at    DateTime  @default(now())
+
+  @@unique([challenge_id, user_id])
 }
 
 model ChallengeModerator {

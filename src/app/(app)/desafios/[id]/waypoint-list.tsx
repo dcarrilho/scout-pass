@@ -12,9 +12,10 @@ type Props = {
   pendingIds: string[];
   challengeId: string;
   isMod?: boolean;
+  isParticipant?: boolean;
 };
 
-export default function WaypointList({ targets, approvedIds, pendingIds, challengeId, isMod }: Props) {
+export default function WaypointList({ targets, approvedIds, pendingIds, challengeId, isMod, isParticipant }: Props) {
   const [search, setSearch] = useState("");
   const [showVisited, setShowVisited] = useState(false);
 
@@ -97,13 +98,15 @@ export default function WaypointList({ targets, approvedIds, pendingIds, challen
                     <Pencil className="size-3.5" />
                   </Link>
                 )}
-                <Link
-                  href={`/desafios/${challengeId}/checkin/${t.id}`}
-                  className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
-                  style={{ background: "#f97316", color: "#0c0a09" }}
-                >
-                  Check-in
-                </Link>
+                {isParticipant && (
+                  <Link
+                    href={`/desafios/${challengeId}/checkin/${t.id}`}
+                    className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
+                    style={{ background: "#f97316", color: "#0c0a09" }}
+                  >
+                    Check-in
+                  </Link>
+                )}
               </div>
             </div>
           ))}

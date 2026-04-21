@@ -37,6 +37,11 @@ export async function submitCheckIn(
   if (!photo || photo.size === 0) return { error: "A foto é obrigatória." };
   if (photo.size > 10 * 1024 * 1024) return { error: "Foto deve ter no máximo 10MB." };
 
+  const participant = await prisma.challengeParticipant.findUnique({
+    where: { challenge_id_user_id: { challenge_id: challengeId, user_id: session.userId } },
+  });
+  if (!participant) return { error: "Você precisa participar do desafio antes de fazer check-in." };
+
   const alreadyApproved = await prisma.checkIn.findFirst({
     where: {
       user_id: session.userId,
