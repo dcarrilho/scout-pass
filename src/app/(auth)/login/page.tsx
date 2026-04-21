@@ -80,7 +80,7 @@ export default function LoginPage() {
       </aside>
 
       {/* ── Form panel ── */}
-      <main className="min-h-screen flex flex-col px-6 py-7 sm:px-10 md:px-14 lg:px-16 lg:justify-center relative overflow-hidden">
+      <main className="min-h-screen flex flex-col px-6 py-7 sm:px-10 md:px-14 lg:px-16 lg:justify-center relative overflow-hidden bg-[#09090b]">
         {/* Ambient glow — mobile only */}
         <div
           className="absolute -top-36 -right-36 w-[360px] h-[360px] pointer-events-none lg:hidden"
