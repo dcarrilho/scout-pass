@@ -47,7 +47,7 @@ export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; cur
   const visibleComments = expanded ? checkin.comments : checkin.comments.slice(-MAX_COLLAPSED);
 
   return (
-    <article className="rounded-2xl overflow-hidden border bg-card shadow-sm">
+    <article className="rounded-2xl overflow-hidden border shadow-sm" style={{ background: "#161412", borderColor: "rgba(255,255,255,0.06)" }}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3">
         <Link href={`/perfil/${checkin.user.username}`} className="shrink-0">
@@ -80,14 +80,22 @@ export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; cur
           type="button"
           onClick={handleReaction}
           className={`flex items-center gap-1.5 text-sm font-medium transition-colors select-none ${
-            reacted ? "text-orange-500" : "text-muted-foreground hover:text-foreground"
+            reacted ? "text-red-500" : "text-white/50 hover:text-white/80"
           }`}
         >
           <span
-            className="text-base transition-transform duration-150"
-            style={{ transform: bump ? "scale(1.35)" : "scale(1)" }}
+            className="transition-transform duration-150"
+            style={{ transform: bump ? "scale(1.35)" : "scale(1)", display: "flex" }}
           >
-            🏍️
+            {reacted ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 21.593c-.425-.412-8.062-7.515-8.062-12.093a8.063 8.063 0 0 1 16.124 0c0 4.578-7.637 11.681-8.062 12.093z"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            )}
           </span>
           <span className="tabular-nums w-4 text-left">
             {reactionCount > 0 ? reactionCount : ""}
@@ -120,7 +128,7 @@ export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; cur
               <button
                 type="button"
                 onClick={() => setExpanded(true)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="text-xs text-white/35 hover:text-white/70 transition-colors"
               >
                 Ver {hiddenCount} comentário{hiddenCount > 1 ? "s" : ""} anterior{hiddenCount > 1 ? "es" : ""}
               </button>
@@ -128,13 +136,13 @@ export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; cur
           )}
           {visibleComments.map((c) => (
             <li key={c.id} className="flex items-start gap-2 text-sm">
-              <Link href={`/perfil/${c.user.username}`} className="font-semibold shrink-0 hover:underline underline-offset-2">
+              <Link href={`/perfil/${c.user.username}`} className="font-semibold shrink-0 hover:underline underline-offset-2 text-white/90">
                 {c.user.name}
               </Link>
-              <span className="text-muted-foreground flex-1">{c.content}</span>
+              <span className="text-white/55 flex-1">{c.content}</span>
               {c.user.id === currentUserId && (
                 <form action={deleteComment.bind(null, c.id)}>
-                  <button type="submit" className="text-xs text-muted-foreground hover:text-destructive shrink-0">
+                  <button type="submit" className="text-xs text-white/30 hover:text-red-400 shrink-0">
                     ×
                   </button>
                 </form>
@@ -146,7 +154,7 @@ export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; cur
               <button
                 type="button"
                 onClick={() => setExpanded(false)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="text-xs text-white/35 hover:text-white/70 transition-colors"
               >
                 Ocultar comentários
               </button>
@@ -163,7 +171,7 @@ export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; cur
           placeholder="Adicionar comentário…"
           maxLength={280}
           autoComplete="off"
-          className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+          className="flex-1 text-sm bg-transparent outline-none text-white/90 placeholder:text-white/30"
         />
         <Button type="submit" size="sm" variant="ghost" className="shrink-0 text-xs">
           Publicar
