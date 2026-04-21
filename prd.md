@@ -193,7 +193,8 @@ model User {
 
 ### Desafios e Check-in
 - [ ] **Notificações in-app** — aviso ao usuário quando check-in é aprovado ou reprovado
-- [ ] **PWA prompt "Adicionar à Tela Inicial"** — manifesto configurado + prompt nativo de instalação
+- [x] **PWA prompt "Adicionar à Tela Inicial"** — manifesto e componente `InstallPrompt` implementados
+  > ⚠️ **Pendente:** criar `/public/icons/icon-192.png` e `/public/icons/icon-512.png` (logo ScoutPass em PNG). Sem esses arquivos o Chrome não dispara o prompt de instalação.
 
 ### Timeline e Rede Social
 - [ ] **Posts automáticos de gamificação** — gerados ao atingir marcos (MILESTONE, CHALLENGE_START) sem ação manual do usuário
