@@ -4,10 +4,9 @@ import Link from "next/link";
 import { Settings, LogOut } from "lucide-react";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
-import { buttonVariants } from "@/components/ui/button";
 import { logout } from "@/app/actions/auth";
 import FollowButton from "@/components/social/follow-button";
-import { sendGarupaInvite, removeGarupaLink } from "@/app/actions/social";
+import { ProfileTabs } from "@/components/profile/profile-tabs";
 
 type Props = { params: Promise<{ username: string }> };
 
@@ -29,94 +28,141 @@ export default async function PerfilPage({ params }: Props) {
 
   const isOwner = session.userId === user.id;
 
-  const [followerCount, followingCount, checkInCount, medals, currentFollow, garupaLink] = await Promise.all([
-    prisma.follow.count({ where: { following_id: user.id, status: "ACCEPTED" } }),
-    prisma.follow.count({ where: { follower_id: user.id, status: "ACCEPTED" } }),
-    prisma.checkIn.count({ where: { user_id: user.id, status: "APPROVED" } }),
-    prisma.challenge.findMany({
-      where: { checkins: { some: { user_id: user.id, status: "APPROVED" } } },
-      include: {
-        series: { select: { name: true, icon: true, color: true } },
-        _count: { select: { targets: true } },
-        checkins: {
-          where: { user_id: user.id, status: "APPROVED" },
-          select: { id: true },
-        },
-      },
-      orderBy: { name: "asc" },
-    }),
-    !isOwner
-      ? prisma.follow.findUnique({
-          where: { follower_id_following_id: { follower_id: session.userId, following_id: user.id } },
-        })
-      : Promise.resolve(null),
-    !isOwner
-      ? prisma.pilotoGarupa.findFirst({
-          where: {
-            OR: [
-              { piloto_id: session.userId, garupa_id: user.id },
-              { piloto_id: user.id, garupa_id: session.userId },
-            ],
+  const [followerCount, followingCount, checkInCount, medals, recentCheckIns, currentFollow] =
+    await Promise.all([
+      prisma.follow.count({ where: { following_id: user.id, status: "ACCEPTED" } }),
+      prisma.follow.count({ where: { follower_id: user.id, status: "ACCEPTED" } }),
+      prisma.checkIn.count({ where: { user_id: user.id, status: "APPROVED" } }),
+      prisma.challenge.findMany({
+        where: { checkins: { some: { user_id: user.id, status: "APPROVED" } } },
+        include: {
+          series: { select: { name: true, icon: true, color: true } },
+          _count: { select: { targets: true } },
+          checkins: {
+            where: { user_id: user.id, status: "APPROVED" },
+            select: { id: true },
           },
-        })
-      : Promise.resolve(null),
-  ]);
+        },
+        orderBy: { name: "asc" },
+      }),
+      prisma.checkIn.findMany({
+        where: { user_id: user.id, status: "APPROVED" },
+        include: {
+          target: { select: { name: true } },
+          challenge: { select: { name: true } },
+        },
+        orderBy: { reviewed_at: "desc" },
+        take: 9,
+      }),
+      !isOwner
+        ? prisma.follow.findUnique({
+            where: { follower_id_following_id: { follower_id: session.userId, following_id: user.id } },
+          })
+        : Promise.resolve(null),
+    ]);
 
-  const followStatus = currentFollow?.status === "ACCEPTED"
-    ? "accepted"
-    : currentFollow?.status === "PENDING"
-    ? "pending"
-    : "none";
+  const followStatus =
+    currentFollow?.status === "ACCEPTED"
+      ? "accepted"
+      : currentFollow?.status === "PENDING"
+      ? "pending"
+      : "none";
 
   const isFollowing = followStatus === "accepted";
   const canSeeContent = isOwner || !user.is_private || isFollowing;
-  const currentMotos = user.motorcycles;
+
+  const stats = [
+    { label: "Check-ins", value: checkInCount, href: null },
+    { label: "Conquistas", value: medals.length, href: null },
+    { label: "Seguidores", value: followerCount, href: `/perfil/${user.username}/seguidores` },
+    { label: "Seguindo", value: followingCount, href: `/perfil/${user.username}/seguindo` },
+  ];
 
   return (
     <main className="min-h-screen max-w-lg mx-auto">
-      <div className="p-4 pt-6 space-y-5">
+      {/* Cover banner */}
+      <div className="relative h-36 overflow-hidden" style={{
+        background: `
+          radial-gradient(ellipse at 15% 120%, rgba(249,115,22,0.22), transparent 55%),
+          radial-gradient(ellipse at 85% -20%, rgba(249,115,22,0.08), transparent 50%),
+          repeating-linear-gradient(135deg, #1a1614 0 10px, #141210 10px 20px)
+        `,
+      }}>
         {/* Owner actions */}
         {isOwner && (
-          <div className="flex justify-end gap-1">
+          <div className="absolute top-3 right-3 flex gap-1 z-10">
             <Link
               href="/perfil/editar"
-              className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-full transition-colors text-white/60 hover:text-white"
+              style={{ background: "rgba(0,0,0,0.35)" }}
             >
-              <Settings className="size-5" />
+              <Settings className="size-4" />
             </Link>
             <form action={logout}>
               <button
                 type="submit"
-                className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded-full transition-colors text-white/60 hover:text-red-400"
+                style={{ background: "rgba(0,0,0,0.35)" }}
               >
-                <LogOut className="size-5" />
+                <LogOut className="size-4" />
               </button>
             </form>
           </div>
         )}
 
-        {/* Avatar + info */}
-        <div className="flex items-center gap-4">
-          <div className="relative shrink-0">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden bg-muted border-2">
-              {user.avatar_url ? (
-                <Image src={user.avatar_url} alt={user.name} fill className="object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-muted-foreground">
-                  {user.name[0]?.toUpperCase()}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold truncate">{user.name}</h2>
-              {user.is_private && <span className="text-muted-foreground text-sm">🔒</span>}
-            </div>
-            {canSeeContent && user.bio && (
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{user.bio}</p>
+        {/* Avatar — overlaps cover */}
+        <div
+          className="absolute -bottom-12 left-4"
+          style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.5))" }}
+        >
+          <div
+            className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold text-white/80"
+            style={{ background: "#1e1a17", border: "3px solid #0c0a09" }}
+          >
+            {user.avatar_url ? (
+              <Image src={user.avatar_url} alt={user.name} fill className="object-cover" />
+            ) : (
+              user.name[0]?.toUpperCase()
             )}
           </div>
+        </div>
+      </div>
+
+      <div className="px-4 pt-16 pb-4 space-y-4">
+        {/* Name + bio */}
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-white">{user.name}</h1>
+            {user.is_private && <span className="text-white/40 text-sm">🔒</span>}
+          </div>
+          <p className="text-sm text-white/40">@{user.username}</p>
+          {canSeeContent && user.bio && (
+            <p className="text-sm text-white/70 mt-2 leading-relaxed">{user.bio}</p>
+          )}
+        </div>
+
+        {/* Stats row */}
+        <div
+          className="flex rounded-xl overflow-hidden"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          {stats.map(({ label, value, href }, i) => {
+            const content = (
+              <>
+                <p className="text-lg font-bold text-white">{value}</p>
+                <p className="text-[10px] text-white/40 mt-0.5">{label}</p>
+              </>
+            );
+            const cls = `flex-1 py-3 flex flex-col items-center ${i < stats.length - 1 ? "border-r" : ""}`;
+            const style = { borderColor: "rgba(255,255,255,0.06)" };
+            return href ? (
+              <Link key={label} href={href} className={cls + " hover:bg-white/05 transition-colors"} style={style}>
+                {content}
+              </Link>
+            ) : (
+              <div key={label} className={cls} style={style}>{content}</div>
+            );
+          })}
         </div>
 
         {/* Follow button */}
@@ -128,131 +174,39 @@ export default async function PerfilPage({ params }: Props) {
           />
         )}
 
-        {/* Vínculo Piloto/Garupa */}
-        {!isOwner && canSeeContent && (() => {
-          if (!garupaLink) {
-            return (
-              <form action={sendGarupaInvite} className="flex gap-2 items-center">
-                <input type="hidden" name="username" value={user.username} />
-                <button
-                  type="submit"
-                  className="flex-1 text-sm rounded-xl border bg-card px-4 py-2 font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors text-center"
-                >
-                  🤝 Vincular como Piloto/Garupa
-                </button>
-              </form>
-            );
-          }
-          const isSender = garupaLink.piloto_id === session.userId;
-          const isPending = garupaLink.status === "PENDING";
-          return (
-            <div className="flex items-center gap-2 rounded-xl border bg-card px-4 py-2">
-              <span className="text-sm flex-1">
-                {isPending
-                  ? isSender
-                    ? "⏳ Convite Piloto/Garupa enviado"
-                    : "⏳ Convite Piloto/Garupa recebido — aceite em Notificações"
-                  : "🤝 Vinculados como Piloto/Garupa"}
-              </span>
-              <form action={removeGarupaLink.bind(null, garupaLink.id)}>
-                <button type="submit" className="text-xs text-muted-foreground hover:text-destructive">
-                  Desvincular
-                </button>
-              </form>
-            </div>
-          );
-        })()}
-
-        {/* Stats row */}
-        <div className="grid grid-cols-4 gap-2">
-          <div className="rounded-xl border bg-card p-3 text-center">
-            <p className="text-xl font-bold">{checkInCount}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Check-ins</p>
-          </div>
-          <div className="rounded-xl border bg-card p-3 text-center">
-            <p className="text-xl font-bold">{medals.length}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Desafios</p>
-          </div>
-          <Link href={`/perfil/${user.username}/seguidores`} className="rounded-xl border bg-card p-3 text-center hover:bg-muted/50 transition-colors">
-            <p className="text-xl font-bold">{followerCount}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Seguidores</p>
-          </Link>
-          <Link href={`/perfil/${user.username}/seguindo`} className="rounded-xl border bg-card p-3 text-center hover:bg-muted/50 transition-colors">
-            <p className="text-xl font-bold">{followingCount}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Seguindo</p>
-          </Link>
-        </div>
-
-        {/* Private gate */}
-        {!canSeeContent && (
-          <div className="rounded-xl border bg-card p-8 text-center space-y-2">
-            <p className="text-2xl">🔒</p>
-            <p className="font-semibold">Perfil privado</p>
-            <p className="text-sm text-muted-foreground">Siga para ver as conquistas de {user.name}</p>
-          </div>
-        )}
-
-        {/* Current motorcycles */}
-        {canSeeContent && currentMotos.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Garagem</p>
-            {currentMotos.map((moto) => (
-              <div key={moto.id} className="rounded-xl border bg-card px-4 py-3 flex items-center gap-3">
-                <span className="text-2xl">🏍️</span>
-                <div>
-                  <p className="font-semibold text-sm">{moto.brand} {moto.model} {moto.year}</p>
-                  {moto.owned_from && (
-                    <p className="text-xs text-muted-foreground">desde {moto.owned_from}</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Mural de medalhas */}
-        {canSeeContent && medals.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Medalhas</p>
-              <Link href={`/mapa?user=${user.username}`} className="text-xs text-primary font-medium">
-                Ver no mapa →
-              </Link>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {medals.map((challenge) => {
-                const done = challenge.checkins.length;
-                const total = challenge._count.targets;
-                const completed = total > 0 && done >= total;
-                return (
-                  <div
-                    key={challenge.id}
-                    className={`rounded-xl border p-3 flex flex-col items-center gap-1 text-center ${
-                      completed ? "bg-primary/5 border-primary/30" : "bg-card"
-                    }`}
-                  >
-                    <span className="text-2xl">{completed ? "🏆" : "🎯"}</span>
-                    <p className="text-xs font-semibold leading-tight line-clamp-2">{challenge.name}</p>
-                    {challenge.series && (
-                      <p className="text-[10px] text-muted-foreground truncate w-full">{challenge.series.name}</p>
-                    )}
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {done}/{total > 0 ? total : "?"} locais
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Moderação link for mods/admins */}
+        {/* Moderation link */}
         {isOwner && (session.role === "MODERATOR" || session.role === "ADMIN") && (
-          <Link href="/moderacao" className={buttonVariants({ variant: "outline" }) + " w-full justify-center"}>
+          <Link
+            href="/moderacao"
+            className="flex items-center justify-center gap-2 w-full h-10 rounded-xl text-sm font-medium transition-colors text-white/60 hover:text-white"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
             🛡️ Fila de moderação
           </Link>
         )}
+
+        {/* Private gate */}
+        {!canSeeContent && (
+          <div
+            className="rounded-xl p-8 text-center space-y-2"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <p className="text-2xl">🔒</p>
+            <p className="font-semibold text-white">Perfil privado</p>
+            <p className="text-sm text-white/40">Siga para ver as conquistas de {user.name}</p>
+          </div>
+        )}
       </div>
+
+      {/* Tabs */}
+      {canSeeContent && (
+        <ProfileTabs
+          medals={medals}
+          motorcycles={user.motorcycles}
+          recentCheckIns={recentCheckIns}
+          username={user.username}
+        />
+      )}
     </main>
   );
 }
