@@ -115,6 +115,19 @@ export async function declineGarupaLink(linkId: string) {
   revalidatePath("/notificacoes");
 }
 
+export async function removeGarupaLink(linkId: string) {
+  const session = await verifySession();
+
+  await prisma.pilotoGarupa.delete({
+    where: {
+      id: linkId,
+      OR: [{ piloto_id: session.userId }, { garupa_id: session.userId }],
+    },
+  });
+
+  revalidatePath("/notificacoes");
+}
+
 export async function markNotificationsRead(userId: string) {
   const session = await verifySession();
   if (session.userId !== userId) return;

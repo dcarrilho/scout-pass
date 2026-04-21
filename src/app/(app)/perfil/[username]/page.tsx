@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { logout } from "@/app/actions/auth";
 import FollowButton from "@/components/social/follow-button";
+import { sendGarupaInvite, removeGarupaLink } from "@/app/actions/social";
 
 type Props = { params: Promise<{ username: string }> };
 
@@ -28,7 +29,7 @@ export default async function PerfilPage({ params }: Props) {
 
   const isOwner = session.userId === user.id;
 
-  const [followerCount, followingCount, checkInCount, medals, currentFollow] = await Promise.all([
+  const [followerCount, followingCount, checkInCount, medals, currentFollow, garupaLink] = await Promise.all([
     prisma.follow.count({ where: { following_id: user.id, status: "ACCEPTED" } }),
     prisma.follow.count({ where: { follower_id: user.id, status: "ACCEPTED" } }),
     prisma.checkIn.count({ where: { user_id: user.id, status: "APPROVED" } }),
@@ -47,6 +48,16 @@ export default async function PerfilPage({ params }: Props) {
     !isOwner
       ? prisma.follow.findUnique({
           where: { follower_id_following_id: { follower_id: session.userId, following_id: user.id } },
+        })
+      : Promise.resolve(null),
+    !isOwner
+      ? prisma.pilotoGarupa.findFirst({
+          where: {
+            OR: [
+              { piloto_id: session.userId, garupa_id: user.id },
+              { piloto_id: user.id, garupa_id: session.userId },
+            ],
+          },
         })
       : Promise.resolve(null),
   ]);
@@ -117,6 +128,41 @@ export default async function PerfilPage({ params }: Props) {
           />
         )}
 
+        {/* Vínculo Piloto/Garupa */}
+        {!isOwner && canSeeContent && (() => {
+          if (!garupaLink) {
+            return (
+              <form action={sendGarupaInvite} className="flex gap-2 items-center">
+                <input type="hidden" name="username" value={user.username} />
+                <button
+                  type="submit"
+                  className="flex-1 text-sm rounded-xl border bg-card px-4 py-2 font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors text-center"
+                >
+                  🤝 Vincular como Piloto/Garupa
+                </button>
+              </form>
+            );
+          }
+          const isSender = garupaLink.piloto_id === session.userId;
+          const isPending = garupaLink.status === "PENDING";
+          return (
+            <div className="flex items-center gap-2 rounded-xl border bg-card px-4 py-2">
+              <span className="text-sm flex-1">
+                {isPending
+                  ? isSender
+                    ? "⏳ Convite Piloto/Garupa enviado"
+                    : "⏳ Convite Piloto/Garupa recebido — aceite em Notificações"
+                  : "🤝 Vinculados como Piloto/Garupa"}
+              </span>
+              <form action={removeGarupaLink.bind(null, garupaLink.id)}>
+                <button type="submit" className="text-xs text-muted-foreground hover:text-destructive">
+                  Desvincular
+                </button>
+              </form>
+            </div>
+          );
+        })()}
+
         {/* Stats row */}
         <div className="grid grid-cols-4 gap-2">
           <div className="rounded-xl border bg-card p-3 text-center">
@@ -167,7 +213,12 @@ export default async function PerfilPage({ params }: Props) {
         {/* Mural de medalhas */}
         {canSeeContent && medals.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Medalhas</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Medalhas</p>
+              <Link href={`/mapa?user=${user.username}`} className="text-xs text-primary font-medium">
+                Ver no mapa →
+              </Link>
+            </div>
             <div className="grid grid-cols-3 gap-2">
               {medals.map((challenge) => {
                 const done = challenge.checkins.length;

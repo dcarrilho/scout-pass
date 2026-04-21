@@ -17,7 +17,7 @@ import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/dal";
 import {
   followUser, unfollowUser, acceptFollow, declineFollow,
-  sendGarupaInvite, acceptGarupaLink, declineGarupaLink, markNotificationsRead,
+  sendGarupaInvite, acceptGarupaLink, declineGarupaLink, removeGarupaLink, markNotificationsRead,
 } from "@/app/actions/social";
 
 const mockVerify = vi.mocked(verifySession);
@@ -177,6 +177,23 @@ describe("declineGarupaLink", () => {
     mockGarupaDelete.mockResolvedValue({} as any);
     await declineGarupaLink("link-1");
     expect(mockGarupaDelete).toHaveBeenCalled();
+    expect(mockRevalidate).toHaveBeenCalledWith("/notificacoes");
+  });
+});
+
+describe("removeGarupaLink", () => {
+  it("deleta vínculo onde o usuário é piloto ou garupa e revalida", async () => {
+    mockVerify.mockResolvedValue(session);
+    mockGarupaDelete.mockResolvedValue({} as any);
+
+    await removeGarupaLink("link-1");
+
+    expect(mockGarupaDelete).toHaveBeenCalledWith({
+      where: {
+        id: "link-1",
+        OR: [{ piloto_id: "u1" }, { garupa_id: "u1" }],
+      },
+    });
     expect(mockRevalidate).toHaveBeenCalledWith("/notificacoes");
   });
 });
