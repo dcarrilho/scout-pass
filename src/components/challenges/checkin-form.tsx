@@ -30,7 +30,6 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
           name="photo"
           type="file"
           accept="image/*"
-          capture="environment"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
