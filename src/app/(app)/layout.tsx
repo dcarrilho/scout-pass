@@ -7,7 +7,7 @@ import InstallPrompt from "@/components/pwa/install-prompt";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await verifySession();
 
-  const [user, pendingCount] = await Promise.all([
+  const [user, pendingFollows, unreadNotifications] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.userId },
       select: { username: true, role: true, name: true, avatar_url: true },
@@ -15,7 +15,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     prisma.follow.count({
       where: { following_id: session.userId, status: "PENDING" },
     }),
+    prisma.notification.count({
+      where: { user_id: session.userId, read: false },
+    }),
   ]);
+
+  const pendingCount = pendingFollows + unreadNotifications;
 
   const isModerator = user?.role === "MODERATOR" || user?.role === "ADMIN";
 
