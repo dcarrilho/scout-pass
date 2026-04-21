@@ -21,7 +21,10 @@ export default function BottomNav({ username, isModerator: _isModerator }: Props
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur safe-area-bottom">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur safe-area-bottom"
+      style={{ background: "rgba(12,10,9,0.94)", borderTop: "1px solid rgba(255,255,255,0.06)" }}
+    >
       <div className="flex items-stretch max-w-2xl mx-auto px-2">
         {links.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + "/");
@@ -31,10 +34,13 @@ export default function BottomNav({ username, isModerator: _isModerator }: Props
               href={href}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-1 py-2 text-xs transition-colors",
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                isActive ? "text-[#f97316]" : "text-white/40 hover:text-white/80"
               )}
             >
-              <div className={cn("rounded-full px-5 py-1.5 transition-colors", isActive && "bg-primary/10")}>
+              <div
+                className={cn("rounded-full px-5 py-1.5 transition-colors")}
+                style={isActive ? { background: "rgba(249,115,22,0.12)" } : {}}
+              >
                 <Icon className={cn("size-5", isActive && "stroke-[2.5px]")} />
               </div>
               <span className={cn("text-[10px]", isActive ? "font-semibold" : "font-medium")}>{label}</span>
