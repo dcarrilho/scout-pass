@@ -25,7 +25,7 @@ type Props = {
   cityState?: string | null;
 };
 
-export function EditWaypointForm({ targetId, challengeId, name, type, order, latitude, longitude, cityId, cityName, cityState, cityRegion }: Props) {
+export function EditWaypointForm({ targetId, challengeId, name, type, order, latitude, longitude, cityId, cityName, cityState }: Props) {
   const [state, action, pending] = useActionState(
     updateTarget.bind(null, targetId, challengeId),
     undefined
