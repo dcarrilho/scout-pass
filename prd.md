@@ -1,7 +1,7 @@
 # ScoutPass — Product Requirements Document
 
-> **Versão:** 0.1 — Estrutura do projeto + Autenticação
-> **Última atualização:** 2026-04-20
+> **Versão:** 0.6 — Participação, Moderação por desafio, Mapa e Waypoints
+> **Última atualização:** 2026-04-21
 
 ---
 
@@ -37,18 +37,25 @@ Esta versão cobre exclusivamente:
 
 ---
 
-## 4. Modelo de Dados — v0.1
+## 4. Modelo de Dados — v0.6
 
 ```prisma
-model User {
-  id         String   @id @default(cuid())
-  name       String
-  username   String   @unique
-  email      String   @unique
-  password   String   -- hash bcrypt
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-}
+// Enums: Role, TargetType, CheckInStatus, FollowStatus, LinkStatus, NotificationType, ModerationMode
+
+User — avatar_url, cover_url, bio, is_private, role (USER/MODERATOR/ADMIN)
+Motorcycle — garagem do usuário, is_active
+Follow — status PENDING/ACCEPTED
+PilotoGarupa — vínculo piloto/garupa, status PENDING/ACCEPTED
+Organizer — slug, logo_url, cover_url
+Series — icon, color, order, cover_url
+Challenge — moderation_mode (PUBLIC/PRIVATE), cover_url, is_active
+  → ChallengeParticipant (user_id + challenge_id) — participação obrigatória pré check-in
+  → ChallengeModerator (user_id + challenge_id) — moderadores designados (modo PRIVATE)
+ChallengeTarget — M2N com Challenge, city_id, type, lat/lng, order
+City — ibge_code, name, state, region, latitude, longitude (5571 municípios IBGE)
+CheckIn — photo_url, EXIF, status PENDING/APPROVED/REJECTED, reviewed_by
+Notification — CHECKIN_APPROVED / CHECKIN_REJECTED
+Reaction, Comment — feed social
 ```
 
 ---
@@ -169,18 +176,31 @@ model User {
 
 ---
 
-## 10. Próximas versões (planejamento futuro)
+## 10. Histórico de versões
 
 | Versão | Conteúdo |
 |---|---|
-| v0.3 | Desafios e sistema de check-in |
-| v0.4 | Timeline e rede social |
-| v0.5 | Moderação e backoffice |
-| v0.6 | Mapa explorador |
+| v0.1 | Auth (cadastro, login, logout) |
+| v0.2 | Perfil, avatar, garagem de motos |
+| v0.3 | Desafios, check-in, upload de fotos |
+| v0.4 | Feed, curtidas, comentários, social (follow) |
+| v0.5 | Moderação, notificações, PWA |
+| v0.6 | Participação obrigatória, mapa, waypoints M2N, City (IBGE), moderação por desafio |
+
+## 10.1 Próximas funcionalidades planejadas
+
+| Funcionalidade | Prioridade |
+|---|---|
+| Posts automáticos de gamificação (marcos de progresso no feed) | Alta |
+| Vínculo Piloto/Garupa — UI de convite no perfil | Média |
+| Mapa de calor de municípios conquistados | Baixa |
+| Ícones PWA (`icon-192.png` / `icon-512.png`) | Baixa |
+| Pins de parceiros comerciais no mapa | Backlog |
+| Check-in em pontos de apoio | Backlog |
 
 ---
 
-## 11. Funcionalidades do Fazedor de Chuva não presentes no ScoutPass
+## 11. Status das funcionalidades do Fazedor de Chuva
 
 > Levantamento feito em 2026-04-20 comparando `Fazedor de Chuva/projeto.md` com este PRD.
 > Estas funcionalidades existem no sistema legado e devem ser consideradas nas próximas versões.
@@ -192,7 +212,9 @@ model User {
 - [ ] **Configuração de visibilidade do perfil** — opção Público / Privado
 
 ### Desafios e Check-in
-- [ ] **Notificações in-app** — aviso ao usuário quando check-in é aprovado ou reprovado
+- [x] **Notificações in-app** — implementado (CHECKIN_APPROVED / CHECKIN_REJECTED)
+- [x] **Participação obrigatória** — usuário clica "Participar" antes de fazer check-in
+- [x] **Moderação por desafio** — modo PUBLIC (qualquer moderador) ou PRIVATE (usuários designados)
 - [x] **PWA prompt "Adicionar à Tela Inicial"** — manifesto e componente `InstallPrompt` implementados
   > ⚠️ **Pendente:** criar `/public/icons/icon-192.png` e `/public/icons/icon-512.png` (logo ScoutPass em PNG). Sem esses arquivos o Chrome não dispara o prompt de instalação.
 
