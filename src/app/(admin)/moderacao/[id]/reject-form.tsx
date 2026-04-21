@@ -1,11 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { rejectCheckIn } from "@/app/actions/moderation";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 const REASONS = [
   "Foto fora do local declarado",
@@ -25,18 +22,29 @@ export default function RejectForm({ checkInId }: { checkInId: string }) {
   }
 
   return (
-    <form action={handleReject} className="space-y-4">
-      <div className="space-y-2">
-        <Label>Motivo da reprovação</Label>
-        {REASONS.map((r) => (
-          <label key={r} className="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="radio" name="reason" value={r} required />
-            {r}
-          </label>
-        ))}
+    <form action={handleReject} className="space-y-5">
+      <div className="rounded-2xl border bg-card p-4 space-y-3">
+        <p className="text-sm font-semibold">Motivo da reprovação</p>
+        <div className="space-y-2">
+          {REASONS.map((r) => (
+            <label key={r} className="flex items-center gap-3 cursor-pointer group">
+              <input
+                type="radio"
+                name="reason"
+                value={r}
+                required
+                className="peer sr-only"
+              />
+              <span className="flex-1 text-sm px-4 py-2.5 rounded-xl border bg-background peer-checked:bg-destructive/10 peer-checked:border-destructive peer-checked:text-destructive group-hover:bg-muted transition-colors">
+                {r}
+              </span>
+            </label>
+          ))}
+        </div>
       </div>
+
       <Button type="submit" variant="destructive" className="w-full">
-        Confirmar reprovação
+        ✕ Confirmar reprovação
       </Button>
     </form>
   );

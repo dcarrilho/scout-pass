@@ -2,109 +2,240 @@ import Link from "next/link";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
-
-const TYPE_CONFIG: Record<string, {
-  label: string;
-  icon: string;
-  progressColor: string;
-  badgeClass: string;
-  headerClass: string;
-}> = {
-  VALENTE:     { label: "Valente",     icon: "🏙️", progressColor: "bg-blue-500",    badgeClass: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",    headerClass: "text-blue-700 dark:text-blue-400" },
-  BANDEIRANTE: { label: "Bandeirante", icon: "🏛️", progressColor: "bg-amber-500",   badgeClass: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300", headerClass: "text-amber-700 dark:text-amber-400" },
-  CARDEAL:     { label: "Cardeal",     icon: "🧭", progressColor: "bg-purple-500",   badgeClass: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",headerClass: "text-purple-700 dark:text-purple-400" },
-  RODOVIARIO:  { label: "Rodoviário",  icon: "🛣️", progressColor: "bg-emerald-500",  badgeClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",headerClass: "text-emerald-700 dark:text-emerald-400" },
-  LENDARIO:    { label: "Lendário",    icon: "⭐", progressColor: "bg-orange-500",   badgeClass: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",headerClass: "text-orange-700 dark:text-orange-400" },
-};
-
-const TYPE_ORDER = ["VALENTE", "BANDEIRANTE", "CARDEAL", "RODOVIARIO", "LENDARIO"];
+import { getSeriesColor } from "@/lib/challenge-colors";
 
 export default async function DesafiosPage() {
   const session = await verifySession();
 
-  const challenges = await prisma.challenge.findMany({
-    where: { is_active: true },
-    include: { _count: { select: { targets: true } } },
-    orderBy: [{ type: "asc" }, { state_code: "asc" }],
-  });
+  const [allChallenges, userProgress, organizers, allSeries] = await Promise.all([
+    prisma.challenge.findMany({
+      where: { is_active: true },
+      select: {
+        id: true,
+        name: true,
+        organizer_id: true,
+        series_id: true,
+        _count: { select: { targets: true } },
+      },
+    }),
+    prisma.checkIn.groupBy({
+      by: ["challenge_id"],
+      where: { user_id: session.userId, status: "APPROVED" },
+      _count: { _all: true },
+    }),
+    prisma.organizer.findMany({
+      where: { is_active: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.series.findMany({
+      where: { is_active: true },
+      orderBy: [{ order: "asc" }, { name: "asc" }],
+    }),
+  ]);
 
-  const approvedCheckIns = await prisma.checkIn.groupBy({
-    by: ["challenge_id"],
-    where: { user_id: session.userId, status: "APPROVED" },
-    _count: { _all: true },
-  });
+  const progressMap = Object.fromEntries(userProgress.map((c) => [c.challenge_id, c._count._all]));
 
-  const progressMap = Object.fromEntries(
-    approvedCheckIns.map((c) => [c.challenge_id, c._count._all])
-  );
+  // Partition challenges
+  const byOrg: Record<string, typeof allChallenges> = {};
+  const bySeries: Record<string, typeof allChallenges> = {};
+  const standalone: typeof allChallenges = [];
 
-  const grouped = challenges.reduce<Record<string, typeof challenges>>(
-    (acc, c) => {
-      if (!acc[c.type]) acc[c.type] = [];
-      acc[c.type].push(c);
-      return acc;
-    },
-    {}
-  );
+  for (const c of allChallenges) {
+    if (c.series_id) {
+      (bySeries[c.series_id] ??= []).push(c);
+    } else if (c.organizer_id) {
+      (byOrg[c.organizer_id] ??= []).push(c);
+    } else {
+      standalone.push(c);
+    }
+  }
+
+  function orgStats(orgId: string) {
+    const seriesIds = allSeries.filter((s) => s.organizer_id === orgId).map((s) => s.id);
+    const challenges = [
+      ...(byOrg[orgId] ?? []),
+      ...seriesIds.flatMap((sid) => bySeries[sid] ?? []),
+    ];
+    const total = challenges.reduce((s, c) => s + c._count.targets, 0);
+    const done = challenges.reduce((s, c) => s + (progressMap[c.id] ?? 0), 0);
+    return { count: challenges.length, total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
+  }
+
+  function seriesStats(seriesId: string) {
+    const challenges = bySeries[seriesId] ?? [];
+    const total = challenges.reduce((s, c) => s + c._count.targets, 0);
+    const done = challenges.reduce((s, c) => s + (progressMap[c.id] ?? 0), 0);
+    return { count: challenges.length, total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
+  }
+
+  const standaloneSeries = allSeries.filter((s) => !s.organizer_id);
+  const isEmpty = organizers.length === 0 && standaloneSeries.length === 0 && standalone.length === 0;
+
+  const hasQuickNav = organizers.length + allSeries.length > 1;
 
   return (
     <main className="min-h-screen max-w-2xl mx-auto">
-      <div className="p-4 pt-6 space-y-8">
-        {TYPE_ORDER.filter((t) => grouped[t]).map((type) => {
-          const config = TYPE_CONFIG[type] ?? { label: type, icon: "🏆", progressColor: "bg-primary", badgeClass: "", headerClass: "" };
-          const list = grouped[type];
+      <div className="pt-6 space-y-8">
+        <div className="px-4">
+          <h1 className="text-xl font-bold">Desafios</h1>
+        </div>
 
-          return (
-            <section key={type} className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{config.icon}</span>
-                <h2 className={cn("text-base font-bold", config.headerClass)}>{config.label}</h2>
-                <span className="text-xs text-muted-foreground ml-auto">{list.length} desafios</span>
-              </div>
+        {/* Quick-nav chip strip */}
+        {hasQuickNav && (
+          <div className="flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-none">
+            {organizers.map((org) => (
+              <Link
+                key={org.id}
+                href={`/desafios/org/${org.slug}`}
+                className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium whitespace-nowrap shrink-0 hover:bg-muted transition-colors"
+              >
+                {org.logo_url
+                  ? <img src={org.logo_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                  : <span className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">{org.name[0]}</span>
+                }
+                {org.name}
+              </Link>
+            ))}
+            {allSeries.map((s) => (
+              <Link
+                key={s.id}
+                href={`/desafios/serie/${s.id}`}
+                className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium whitespace-nowrap shrink-0 hover:bg-muted transition-colors"
+              >
+                {s.icon && <span>{s.icon}</span>}
+                {s.name}
+              </Link>
+            ))}
+          </div>
+        )}
 
-              <div className="grid gap-3">
-                {list.map((challenge) => {
-                  const total = challenge._count.targets;
-                  const done = progressMap[challenge.id] ?? 0;
-                  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-                  const isComplete = pct === 100;
+        <div className="px-4 space-y-8 pb-6">
+        {isEmpty && (
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+            <span className="text-5xl">🗺️</span>
+            <p className="font-semibold">Nenhum desafio disponível</p>
+            <p className="text-sm text-muted-foreground">Volte em breve para novidades.</p>
+          </div>
+        )}
 
-                  return (
-                    <Link key={challenge.id} href={`/desafios/${challenge.id}`}>
-                      <div className={cn(
-                        "rounded-xl border bg-card p-4 space-y-3 transition-all hover:shadow-md active:scale-[0.99]",
-                        isComplete && "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10"
-                      )}>
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="font-semibold text-sm leading-snug flex-1">{challenge.name}</p>
-                          {isComplete ? (
-                            <span className="text-xs font-bold text-green-600 dark:text-green-400 shrink-0 flex items-center gap-1">
-                              ✅ Completo
-                            </span>
-                          ) : (
-                            <span className={cn("text-xs font-semibold rounded-full px-2 py-0.5 shrink-0", config.badgeClass)}>
-                              {pct}%
-                            </span>
+        {/* Organizers */}
+        {organizers.length > 0 && (
+          <section className="space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Organizadores</p>
+            <div className="grid gap-3">
+              {organizers.map((org) => {
+                const { pct, count, done, total } = orgStats(org.id);
+                return (
+                  <Link key={org.id} href={`/desafios/org/${org.slug}`}>
+                    <div className="rounded-2xl border bg-card p-4 space-y-3 hover:shadow-md active:scale-[0.99] transition-all">
+                      <div className="flex items-center gap-3">
+                        {org.logo_url ? (
+                          <img src={org.logo_url} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary text-lg shrink-0">
+                            {org.name[0]}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm">{org.name}</p>
+                          {org.description && (
+                            <p className="text-xs text-muted-foreground truncate">{org.description}</p>
                           )}
                         </div>
-
+                        <span className="text-xs text-muted-foreground shrink-0">{count} desafios</span>
+                      </div>
+                      {total > 0 && (
                         <div className="space-y-1">
                           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className={cn("h-full rounded-full transition-all", isComplete ? "bg-green-500" : config.progressColor)}
-                              style={{ width: `${pct}%` }}
-                            />
+                            <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
                           </div>
-                          <p className="text-xs text-muted-foreground">{done} de {total} locais visitados</p>
+                          <p className="text-xs text-muted-foreground">{done} de {total} waypoints · {pct}%</p>
                         </div>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Standalone Series */}
+        {standaloneSeries.length > 0 && (
+          <section className="space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Séries</p>
+            <div className="grid gap-3">
+              {standaloneSeries.map((series) => {
+                const color = getSeriesColor(series.color);
+                const { pct, count, done, total } = seriesStats(series.id);
+                return (
+                  <Link key={series.id} href={`/desafios/serie/${series.id}`}>
+                    <div className="rounded-xl border bg-card p-4 space-y-3 hover:shadow-md active:scale-[0.99] transition-all">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          {series.icon && <span className="text-xl">{series.icon}</span>}
+                          <p className="font-semibold text-sm">{series.name}</p>
+                        </div>
+                        <span className={cn("text-xs font-semibold rounded-full px-2 py-0.5 shrink-0", color.badge)}>
+                          {count} desafios
+                        </span>
                       </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-          );
-        })}
+                      {total > 0 && (
+                        <div className="space-y-1">
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div className={cn("h-full rounded-full", color.progress)} style={{ width: `${pct}%` }} />
+                          </div>
+                          <p className="text-xs text-muted-foreground">{done} de {total} waypoints · {pct}%</p>
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Standalone Challenges */}
+        {standalone.length > 0 && (
+          <section className="space-y-3">
+            {(organizers.length > 0 || standaloneSeries.length > 0) && (
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Avulsos</p>
+            )}
+            <div className="grid gap-3">
+              {standalone.map((challenge) => {
+                const total = challenge._count.targets;
+                const done = progressMap[challenge.id] ?? 0;
+                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                const isComplete = pct === 100;
+                return (
+                  <Link key={challenge.id} href={`/desafios/${challenge.id}`}>
+                    <div className={cn(
+                      "rounded-xl border bg-card p-4 space-y-3 transition-all hover:shadow-md active:scale-[0.99]",
+                      isComplete && "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10"
+                    )}>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-sm leading-snug flex-1">{challenge.name}</p>
+                        {isComplete ? (
+                          <span className="text-xs font-bold text-green-600 dark:text-green-400 shrink-0">✅ Completo</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground shrink-0">{pct}%</span>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className={cn("h-full rounded-full", isComplete ? "bg-green-500" : "bg-primary")} style={{ width: `${pct}%` }} />
+                        </div>
+                        <p className="text-xs text-muted-foreground">{done} de {total} locais visitados</p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+        </div>
       </div>
     </main>
   );

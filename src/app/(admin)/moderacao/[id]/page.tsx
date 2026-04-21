@@ -23,18 +23,32 @@ export default async function RejectPage({ params }: Props) {
   if (!checkin) notFound();
 
   return (
-    <main className="min-h-screen p-4 max-w-lg mx-auto py-8 space-y-6">
-      <Link href="/moderacao" className="text-sm text-muted-foreground hover:underline">← Fila</Link>
-      <h1 className="text-xl font-bold">Reprovar check-in</h1>
-      <div className="relative w-full h-64 rounded-lg overflow-hidden bg-muted">
-        <Image src={checkin.photo_url} alt="Check-in" fill className="object-cover" />
+    <main className="min-h-screen max-w-lg mx-auto">
+      <div className="px-4 pt-6 pb-2 flex items-center gap-3">
+        <Link href="/moderacao" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          ← Fila
+        </Link>
+        <h1 className="text-xl font-bold">Reprovar check-in</h1>
       </div>
-      <div className="text-sm space-y-1">
-        <p><span className="text-muted-foreground">Usuário: </span>{checkin.user.name}</p>
-        <p><span className="text-muted-foreground">Desafio: </span>{checkin.challenge.name}</p>
-        <p><span className="text-muted-foreground">Local: </span>{checkin.target.name}</p>
+
+      <div className="p-4 space-y-4">
+        <article className="rounded-2xl border bg-card overflow-hidden shadow-sm">
+          {/* Photo */}
+          <div className="relative w-full aspect-[4/3] bg-muted">
+            <Image src={checkin.photo_url} alt="Check-in" fill className="object-cover" />
+          </div>
+
+          {/* Meta */}
+          <div className="px-4 py-3 space-y-1">
+            <p className="font-semibold text-sm">{checkin.user.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {checkin.target.name} · {checkin.challenge.name}
+            </p>
+          </div>
+        </article>
+
+        <RejectForm checkInId={id} />
       </div>
-      <RejectForm checkInId={id} />
     </main>
   );
 }
