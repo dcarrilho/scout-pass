@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Rede social gamificada de desafios para motociclistas",
     start_url: "/home",
     display: "standalone",
-    background_color: "#09090b",
-    theme_color: "#09090b",
+    background_color: "#0c0a09",
+    theme_color: "#0c0a09",
     orientation: "portrait",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },

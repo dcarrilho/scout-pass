@@ -85,8 +85,12 @@ export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; cur
           {commentCount > 0 && <span>{commentCount}</span>}
         </button>
 
-        <span className="text-xs text-muted-foreground bg-muted rounded-full px-3 py-1 ml-auto">
-          ✅ {checkin.challenge.name}
+        <span
+          className="text-xs font-medium rounded-full px-3 py-1 ml-auto flex items-center gap-1.5"
+          style={{ background: "rgba(22,163,74,0.12)", color: "#16a34a" }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a] inline-block" />
+          {checkin.challenge.name}
         </span>
       </div>
 

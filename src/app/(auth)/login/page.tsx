@@ -8,7 +8,7 @@ function BrandMark() {
         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
         style={{ background: "#f97316", boxShadow: "0 4px 14px rgba(249,115,22,0.35)" }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#09090b" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0c0a09" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 17h2l1-3h5l2 3h3" />
           <circle cx="18.5" cy="17" r="2.5" />
           <circle cx="5.5" cy="17" r="2.5" />
@@ -22,7 +22,7 @@ function BrandMark() {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 bg-[#09090b] relative overflow-hidden">
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 bg-[#0c0a09] relative overflow-hidden">
       {/* Ambient glow */}
       <div
         className="absolute -top-36 -right-36 w-[360px] h-[360px] pointer-events-none"

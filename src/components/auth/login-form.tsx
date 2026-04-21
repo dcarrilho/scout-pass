@@ -89,7 +89,7 @@ export default function LoginForm() {
         className="mt-2 h-12 rounded-[10px] text-[15px] font-semibold tracking-tight flex items-center justify-center gap-2.5 transition-all duration-150 disabled:opacity-85 disabled:cursor-default"
         style={{
           background: "#f97316",
-          color: "#09090b",
+          color: "#0c0a09",
           boxShadow: "0 8px 24px rgba(249,115,22,0.3)",
         }}
       >
