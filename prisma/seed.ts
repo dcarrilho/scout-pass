@@ -8,21 +8,38 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 const STATES = [
-  { uf: "AC", name: "Valente AC" }, { uf: "AL", name: "Valente AL" },
-  { uf: "AP", name: "Valente AP" }, { uf: "AM", name: "Valente AM" },
-  { uf: "BA", name: "Valente BA" }, { uf: "CE", name: "Valente CE" },
-  { uf: "DF", name: "Valente DF" }, { uf: "ES", name: "Valente ES" },
-  { uf: "GO", name: "Valente GO" }, { uf: "MA", name: "Valente MA" },
-  { uf: "MT", name: "Valente MT" }, { uf: "MS", name: "Valente MS" },
-  { uf: "MG", name: "Valente MG" }, { uf: "PA", name: "Valente PA" },
-  { uf: "PB", name: "Valente PB" }, { uf: "PR", name: "Valente PR" },
-  { uf: "PE", name: "Valente PE" }, { uf: "PI", name: "Valente PI" },
-  { uf: "RJ", name: "Valente RJ" }, { uf: "RN", name: "Valente RN" },
-  { uf: "RS", name: "Valente RS" }, { uf: "RO", name: "Valente RO" },
-  { uf: "RR", name: "Valente RR" }, { uf: "SC", name: "Valente SC" },
-  { uf: "SP", name: "Valente SP" }, { uf: "SE", name: "Valente SE" },
-  { uf: "TO", name: "Valente TO" },
+  { uf: "AC", ibgeId: 12, name: "Valente AC" }, { uf: "AL", ibgeId: 27, name: "Valente AL" },
+  { uf: "AP", ibgeId: 16, name: "Valente AP" }, { uf: "AM", ibgeId: 13, name: "Valente AM" },
+  { uf: "BA", ibgeId: 29, name: "Valente BA" }, { uf: "CE", ibgeId: 23, name: "Valente CE" },
+  { uf: "DF", ibgeId: 53, name: "Valente DF" }, { uf: "ES", ibgeId: 32, name: "Valente ES" },
+  { uf: "GO", ibgeId: 52, name: "Valente GO" }, { uf: "MA", ibgeId: 21, name: "Valente MA" },
+  { uf: "MT", ibgeId: 51, name: "Valente MT" }, { uf: "MS", ibgeId: 50, name: "Valente MS" },
+  { uf: "MG", ibgeId: 31, name: "Valente MG" }, { uf: "PA", ibgeId: 15, name: "Valente PA" },
+  { uf: "PB", ibgeId: 25, name: "Valente PB" }, { uf: "PR", ibgeId: 41, name: "Valente PR" },
+  { uf: "PE", ibgeId: 26, name: "Valente PE" }, { uf: "PI", ibgeId: 22, name: "Valente PI" },
+  { uf: "RJ", ibgeId: 33, name: "Valente RJ" }, { uf: "RN", ibgeId: 24, name: "Valente RN" },
+  { uf: "RS", ibgeId: 43, name: "Valente RS" }, { uf: "RO", ibgeId: 11, name: "Valente RO" },
+  { uf: "RR", ibgeId: 14, name: "Valente RR" }, { uf: "SC", ibgeId: 42, name: "Valente SC" },
+  { uf: "SP", ibgeId: 35, name: "Valente SP" }, { uf: "SE", ibgeId: 28, name: "Valente SE" },
+  { uf: "TO", ibgeId: 17, name: "Valente TO" },
 ];
+
+type CentroidMap = Record<string, { lat: number; lng: number }>;
+
+async function fetchStateCentroids(ibgeId: number): Promise<CentroidMap> {
+  try {
+    const res = await fetch(
+      `https://servicodados.ibge.gov.br/api/v3/malhas/estados/${ibgeId}/municipios/metadados`
+    );
+    if (!res.ok) return {};
+    const data: { codarea: string; centroide: { coordinates: [number, number] } }[] = await res.json();
+    return Object.fromEntries(
+      data.map((m) => [m.codarea, { lng: m.centroide.coordinates[0], lat: m.centroide.coordinates[1] }])
+    );
+  } catch {
+    return {};
+  }
+}
 
 const CAPITALS = [
   { name: "Rio Branco", lat: -9.975, lng: -67.824 },
@@ -137,10 +154,11 @@ async function seedValente() {
     });
     if (existing) { console.log(`${state.name} já existe, pulando...`); continue; }
 
-    const res = await fetch(
-      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${state.uf}/municipios`
-    );
-    const municipios: { id: number; nome: string }[] = await res.json();
+    const [municipiosRes, centroids] = await Promise.all([
+      fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${state.uf}/municipios`),
+      fetchStateCentroids(state.ibgeId),
+    ]);
+    const municipios: { id: number; nome: string }[] = await municipiosRes.json();
 
     const challenge = await prisma.challenge.create({
       data: {
@@ -152,15 +170,19 @@ async function seedValente() {
     });
 
     for (const municipio of municipios) {
+      const coords = centroids[String(municipio.id)];
       await prisma.challengeTarget.create({
         data: {
           challenge_id: challenge.id,
           name: municipio.nome,
+          latitude: coords?.lat ?? null,
+          longitude: coords?.lng ?? null,
           type: "CITY",
         },
       });
     }
-    console.log(`${state.name} criado com ${municipios.length} municípios.`);
+    const withCoords = Object.keys(centroids).length;
+    console.log(`${state.name} criado com ${municipios.length} municípios (${withCoords} com coordenadas).`);
   }
 }
 
