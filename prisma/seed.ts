@@ -61,14 +61,24 @@ const EXTREMES = [
   { name: "Nascente do Rio Moa — Extremo Oeste", lat: -7.531, lng: -73.989, order: 4 },
 ];
 
+async function getOrCreateSeries(name: string, icon: string, color: string, order: number) {
+  const existing = await prisma.series.findFirst({ where: { name } });
+  if (existing) return existing;
+  return prisma.series.create({ data: { name, icon, color, order } });
+}
+
 async function seedBandeirante() {
-  const existing = await prisma.challenge.findFirst({ where: { type: "BANDEIRANTE" } });
+  const series = await getOrCreateSeries("Bandeirante", "🏛️", "amber", 2);
+
+  const existing = await prisma.challenge.findFirst({
+    where: { series_id: series.id, name: "Bandeirante" },
+  });
   if (existing) { console.log("Bandeirante já existe, pulando..."); return; }
 
   const challenge = await prisma.challenge.create({
     data: {
+      series_id: series.id,
       name: "Bandeirante",
-      type: "BANDEIRANTE",
       description: "Visite as 27 capitais do Brasil.",
     },
   });
@@ -88,13 +98,17 @@ async function seedBandeirante() {
 }
 
 async function seedCardeal() {
-  const existing = await prisma.challenge.findFirst({ where: { type: "CARDEAL" } });
+  const series = await getOrCreateSeries("Cardeal", "🧭", "purple", 3);
+
+  const existing = await prisma.challenge.findFirst({
+    where: { series_id: series.id, name: "Cardeal" },
+  });
   if (existing) { console.log("Cardeal já existe, pulando..."); return; }
 
   const challenge = await prisma.challenge.create({
     data: {
+      series_id: series.id,
       name: "Cardeal",
-      type: "CARDEAL",
       description: "Alcance os 4 extremos geográficos do Brasil.",
     },
   });
@@ -115,9 +129,11 @@ async function seedCardeal() {
 }
 
 async function seedValente() {
+  const series = await getOrCreateSeries("Valente", "🏙️", "blue", 1);
+
   for (const state of STATES) {
     const existing = await prisma.challenge.findFirst({
-      where: { type: "VALENTE", state_code: state.uf },
+      where: { series_id: series.id, state_code: state.uf },
     });
     if (existing) { console.log(`${state.name} já existe, pulando...`); continue; }
 
@@ -128,8 +144,8 @@ async function seedValente() {
 
     const challenge = await prisma.challenge.create({
       data: {
+        series_id: series.id,
         name: state.name,
-        type: "VALENTE",
         state_code: state.uf,
         description: `Visite todos os municípios do estado.`,
       },
