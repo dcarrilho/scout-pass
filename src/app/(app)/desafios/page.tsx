@@ -11,7 +11,7 @@ export default async function DesafiosPage({ searchParams }: { searchParams: Sea
   const { status: statusParam } = await searchParams;
   const statusFilter = (statusParam === "progress" || statusParam === "complete") ? statusParam : "all";
 
-  const [allChallenges, userProgress, organizers, allSeries] = await Promise.all([
+  const [allChallenges, userProgress, organizers, allSeries, userParticipations] = await Promise.all([
     prisma.challenge.findMany({
       where: { is_active: true },
       select: {
@@ -35,7 +35,13 @@ export default async function DesafiosPage({ searchParams }: { searchParams: Sea
       where: { is_active: true },
       orderBy: [{ order: "asc" }, { name: "asc" }],
     }),
+    prisma.challengeParticipant.findMany({
+      where: { user_id: session.userId },
+      select: { challenge_id: true },
+    }),
   ]);
+
+  const participantSet = new Set(userParticipations.map((p) => p.challenge_id));
 
   const progressMap = Object.fromEntries(userProgress.map((c) => [c.challenge_id, c._count._all]));
 
@@ -76,8 +82,8 @@ export default async function DesafiosPage({ searchParams }: { searchParams: Sea
   }
 
   function matchesFilter(challengeId: string, totalTargets: number) {
-    const { done, isComplete } = challengeProgress(challengeId, totalTargets);
-    if (statusFilter === "progress") return done > 0 && !isComplete;
+    const { isComplete } = challengeProgress(challengeId, totalTargets);
+    if (statusFilter === "progress") return participantSet.has(challengeId) && !isComplete;
     if (statusFilter === "complete") return isComplete;
     return true;
   }
