@@ -48,10 +48,7 @@ export function EditWaypointForm({ targetId, challengeId, name, type, order, lat
           {TARGET_TYPES.map((t) => (
             <label key={t.value} className="cursor-pointer">
               <input type="radio" name="type" value={t.value} defaultChecked={type === t.value} className="sr-only peer" />
-              <span
-                className="inline-block px-3 py-1.5 rounded-full text-sm font-medium transition-colors peer-checked:bg-orange-500 peer-checked:text-white"
-                style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.55)" }}
-              >
+              <span className="inline-block px-3 py-1.5 rounded-full text-sm font-medium transition-colors bg-white/10 text-white/50 peer-checked:bg-orange-500 peer-checked:text-white">
                 {t.label}
               </span>
             </label>
