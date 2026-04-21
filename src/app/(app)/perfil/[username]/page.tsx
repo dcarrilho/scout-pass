@@ -179,17 +179,6 @@ export default async function PerfilPage({ params }: Props) {
           />
         )}
 
-        {/* Moderation link */}
-        {isOwner && (session.role === "MODERATOR" || session.role === "ADMIN") && (
-          <Link
-            href="/moderacao"
-            className="flex items-center justify-center gap-2 w-full h-10 rounded-xl text-sm font-medium transition-colors text-white/60 hover:text-white"
-            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
-          >
-            🛡️ Fila de moderação
-          </Link>
-        )}
-
         {/* Private gate */}
         {!canSeeContent && (
           <div
