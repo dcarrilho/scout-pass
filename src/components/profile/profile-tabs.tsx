@@ -36,14 +36,14 @@ type Props = {
 type Tab = "conquistas" | "garagem" | "checkins";
 
 const TABS: { key: Tab; label: string; count?: (p: Props) => number }[] = [
+  { key: "checkins", label: "Check-ins", count: (p) => p.recentCheckIns.length },
   { key: "conquistas", label: "Conquistas", count: (p) => p.medals.length },
   { key: "garagem", label: "Garagem", count: (p) => p.motorcycles.length },
-  { key: "checkins", label: "Check-ins", count: (p) => p.recentCheckIns.length },
 ];
 
 export function ProfileTabs(props: Props) {
   const { medals, motorcycles, recentCheckIns, username } = props;
-  const [tab, setTab] = useState<Tab>("conquistas");
+  const [tab, setTab] = useState<Tab>("checkins");
 
   return (
     <div>
