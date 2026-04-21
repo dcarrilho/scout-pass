@@ -1,16 +1,8 @@
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
-import dynamic from "next/dynamic";
+import { Suspense } from "react";
+import MapClient from "./map-client";
 import type { MapPin } from "@/components/map/conquest-map";
-
-const ConquestMap = dynamic(() => import("@/components/map/conquest-map"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full rounded-xl bg-muted animate-pulse flex items-center justify-center">
-      <p className="text-sm text-muted-foreground">Carregando mapa…</p>
-    </div>
-  ),
-});
 
 type Props = { searchParams: Promise<{ user?: string }> };
 
@@ -71,7 +63,13 @@ export default async function MapaPage({ searchParams }: Props) {
             </p>
           </div>
         ) : (
-          <ConquestMap pins={pins} />
+          <Suspense fallback={
+            <div className="w-full h-full rounded-xl bg-muted animate-pulse flex items-center justify-center">
+              <p className="text-sm text-muted-foreground">Carregando mapa…</p>
+            </div>
+          }>
+            <MapClient pins={pins} />
+          </Suspense>
         )}
       </div>
     </main>
