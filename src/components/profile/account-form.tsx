@@ -2,9 +2,7 @@
 
 import { useActionState } from "react";
 import { updateAccount } from "@/app/actions/profile";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { DarkInput, DarkField, DarkSubmit, FormError } from "@/components/ui/dark-form";
 
 type Props = { username: string; email: string };
 
@@ -12,26 +10,21 @@ export default function AccountForm({ username, email }: Props) {
   const [state, action, pending] = useActionState(updateAccount, undefined);
 
   return (
-    <form action={action} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="username">Usuário</Label>
-        <Input id="username" name="username" defaultValue={username} required />
-        <p className="text-xs text-muted-foreground">Apenas letras minúsculas, números e _</p>
-        {state?.errors?.username && <p className="text-xs text-destructive">{state.errors.username[0]}</p>}
-      </div>
+    <form action={action} className="space-y-5">
+      <DarkField label="Usuário" hint="Apenas letras minúsculas, números e _" error={state?.errors?.username?.[0]}>
+        <DarkInput id="username" name="username" defaultValue={username} required />
+      </DarkField>
 
-      <div className="space-y-2">
-        <Label htmlFor="email">E-mail</Label>
-        <Input id="email" name="email" type="email" defaultValue={email} required />
-        {state?.errors?.email && <p className="text-xs text-destructive">{state.errors.email[0]}</p>}
-      </div>
+      <DarkField label="E-mail" error={state?.errors?.email?.[0]}>
+        <DarkInput id="email" name="email" type="email" defaultValue={email} required />
+      </DarkField>
 
-      {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
-      {state?.success && <p className="text-sm text-green-600">Conta atualizada!</p>}
+      <FormError message={state?.message} />
+      {state?.success && (
+        <p className="text-sm font-medium" style={{ color: "#16a34a" }}>Conta atualizada!</p>
+      )}
 
-      <Button type="submit" variant="outline" disabled={pending}>
-        {pending ? "Salvando..." : "Salvar dados da conta"}
-      </Button>
+      <DarkSubmit pending={pending} label="Salvar dados da conta" pendingLabel="Salvando..." />
     </form>
   );
 }

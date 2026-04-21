@@ -15,10 +15,12 @@ export const inputFocusStyle = {
 
 export function DarkField({
   label,
+  hint,
   error,
   children,
 }: {
   label: string;
+  hint?: string;
   error?: string;
   children: React.ReactNode;
 }) {
@@ -26,6 +28,7 @@ export function DarkField({
     <div className="space-y-1.5">
       <label className="text-sm font-medium text-white/75">{label}</label>
       {children}
+      {hint && !error && <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>{hint}</p>}
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
