@@ -44,6 +44,7 @@ export default async function DesafioDetailPage({ params, searchParams }: Props)
   const isComplete = pct === 100;
 
   const parentOrg = challenge.series?.organizer ?? challenge.organizer;
+  const isMod = session.role === "MODERATOR" || session.role === "ADMIN";
 
   return (
     <main className="min-h-screen max-w-2xl mx-auto">
@@ -132,6 +133,25 @@ export default async function DesafioDetailPage({ params, searchParams }: Props)
       </div>
 
       <div className="px-4 py-5 space-y-5">
+        {/* Mod management */}
+        {isMod && (
+          <div
+            className="rounded-2xl p-4 space-y-3"
+            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest">Administração</p>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/desafios/${id}/waypoints/novo`}
+                className="rounded-full px-3 py-1.5 text-xs font-semibold"
+                style={{ background: "rgba(249,115,22,0.15)", color: "#f97316", border: "1px solid rgba(249,115,22,0.3)" }}
+              >
+                + Novo waypoint
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Check-in enviado banner */}
         {enviado && (
           <div
@@ -147,6 +167,7 @@ export default async function DesafioDetailPage({ params, searchParams }: Props)
           approvedIds={approvedIds}
           pendingIds={pendingIds}
           challengeId={id}
+          isMod={isMod}
         />
       </div>
     </main>

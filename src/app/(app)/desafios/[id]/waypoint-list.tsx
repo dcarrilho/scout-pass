@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 
 type Target = { id: string; name: string };
 
@@ -10,9 +11,10 @@ type Props = {
   approvedIds: string[];
   pendingIds: string[];
   challengeId: string;
+  isMod?: boolean;
 };
 
-export default function WaypointList({ targets, approvedIds, pendingIds, challengeId }: Props) {
+export default function WaypointList({ targets, approvedIds, pendingIds, challengeId, isMod }: Props) {
   const [search, setSearch] = useState("");
   const [showVisited, setShowVisited] = useState(false);
 
@@ -61,6 +63,11 @@ export default function WaypointList({ targets, approvedIds, pendingIds, challen
             >
               <span className="shrink-0 text-base">⏳</span>
               <span className="text-sm text-white/80 flex-1">{t.name}</span>
+              {isMod && (
+                <Link href={`/desafios/${challengeId}/waypoints/${t.id}/editar`} className="shrink-0 p-1.5 rounded-lg text-white/30 hover:text-white/70 transition-colors" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <Pencil className="size-3.5" />
+                </Link>
+              )}
             </div>
           ))}
         </div>
@@ -84,13 +91,20 @@ export default function WaypointList({ targets, approvedIds, pendingIds, challen
                 <span className="shrink-0 text-base">⭕</span>
                 <span className="text-sm text-white/80 truncate">{t.name}</span>
               </div>
-              <Link
-                href={`/desafios/${challengeId}/checkin/${t.id}`}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
-                style={{ background: "#f97316", color: "#0c0a09" }}
-              >
-                Check-in
-              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                {isMod && (
+                  <Link href={`/desafios/${challengeId}/waypoints/${t.id}/editar`} className="p-1.5 rounded-lg text-white/30 hover:text-white/70 transition-colors" style={{ background: "rgba(255,255,255,0.06)" }}>
+                    <Pencil className="size-3.5" />
+                  </Link>
+                )}
+                <Link
+                  href={`/desafios/${challengeId}/checkin/${t.id}`}
+                  className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
+                  style={{ background: "#f97316", color: "#0c0a09" }}
+                >
+                  Check-in
+                </Link>
+              </div>
             </div>
           ))}
         </div>
@@ -114,7 +128,12 @@ export default function WaypointList({ targets, approvedIds, pendingIds, challen
               style={{ background: "rgba(22,163,74,0.06)", border: "1px solid rgba(22,163,74,0.2)" }}
             >
               <span className="shrink-0 text-base">✅</span>
-              <span className="text-sm text-white/40 line-through truncate">{t.name}</span>
+              <span className="text-sm text-white/40 line-through truncate flex-1">{t.name}</span>
+              {isMod && (
+                <Link href={`/desafios/${challengeId}/waypoints/${t.id}/editar`} className="shrink-0 p-1.5 rounded-lg text-white/20 hover:text-white/60 transition-colors" style={{ background: "rgba(255,255,255,0.04)" }}>
+                  <Pencil className="size-3.5" />
+                </Link>
+              )}
             </div>
           ))}
         </div>
