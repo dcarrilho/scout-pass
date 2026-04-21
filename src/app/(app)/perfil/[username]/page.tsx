@@ -28,11 +28,22 @@ export default async function PerfilPage({ params }: Props) {
 
   const isOwner = session.userId === user.id;
 
-  const [followerCount, followingCount, checkInCount, challengeGroups, currentFollow] = await Promise.all([
+  const [followerCount, followingCount, checkInCount, medals, currentFollow] = await Promise.all([
     prisma.follow.count({ where: { following_id: user.id, status: "ACCEPTED" } }),
     prisma.follow.count({ where: { follower_id: user.id, status: "ACCEPTED" } }),
     prisma.checkIn.count({ where: { user_id: user.id, status: "APPROVED" } }),
-    prisma.checkIn.groupBy({ by: ["challenge_id"], where: { user_id: user.id, status: "APPROVED" } }),
+    prisma.challenge.findMany({
+      where: { checkins: { some: { user_id: user.id, status: "APPROVED" } } },
+      include: {
+        series: { select: { name: true, icon: true, color: true } },
+        _count: { select: { targets: true } },
+        checkins: {
+          where: { user_id: user.id, status: "APPROVED" },
+          select: { id: true },
+        },
+      },
+      orderBy: { name: "asc" },
+    }),
     !isOwner
       ? prisma.follow.findUnique({
           where: { follower_id_following_id: { follower_id: session.userId, following_id: user.id } },
@@ -113,7 +124,7 @@ export default async function PerfilPage({ params }: Props) {
             <p className="text-[10px] text-muted-foreground mt-0.5">Check-ins</p>
           </div>
           <div className="rounded-xl border bg-card p-3 text-center">
-            <p className="text-xl font-bold">{challengeGroups.length}</p>
+            <p className="text-xl font-bold">{medals.length}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Desafios</p>
           </div>
           <Link href={`/perfil/${user.username}/seguidores`} className="rounded-xl border bg-card p-3 text-center hover:bg-muted/50 transition-colors">
@@ -150,6 +161,37 @@ export default async function PerfilPage({ params }: Props) {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Mural de medalhas */}
+        {canSeeContent && medals.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Medalhas</p>
+            <div className="grid grid-cols-3 gap-2">
+              {medals.map((challenge) => {
+                const done = challenge.checkins.length;
+                const total = challenge._count.targets;
+                const completed = total > 0 && done >= total;
+                return (
+                  <div
+                    key={challenge.id}
+                    className={`rounded-xl border p-3 flex flex-col items-center gap-1 text-center ${
+                      completed ? "bg-primary/5 border-primary/30" : "bg-card"
+                    }`}
+                  >
+                    <span className="text-2xl">{completed ? "🏆" : "🎯"}</span>
+                    <p className="text-xs font-semibold leading-tight line-clamp-2">{challenge.name}</p>
+                    {challenge.series && (
+                      <p className="text-[10px] text-muted-foreground truncate w-full">{challenge.series.name}</p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {done}/{total > 0 ? total : "?"} locais
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
