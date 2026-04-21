@@ -10,6 +10,7 @@ export type MapPin = {
   challengeName: string;
   lat: number;
   lng: number;
+  status: "approved" | "pending" | "none";
 };
 
 type Props = {
@@ -54,25 +55,33 @@ export default function ConquestMap({ pins, center = [-14.235, -51.925], zoom = 
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <FitBounds pins={pins} />
-      {pins.map((pin) => (
-        <CircleMarker
-          key={pin.id}
-          center={[pin.lat, pin.lng]}
-          radius={9}
-          pathOptions={{
-            fillColor: "#f97316",
-            fillOpacity: 0.9,
-            color: "#7c2d12",
-            weight: 1.5,
-          }}
-        >
-          <Tooltip direction="top" offset={[0, -6]}>
-            <span className="font-semibold">{pin.name}</span>
-            <br />
-            <span className="text-xs text-gray-500">{pin.challengeName}</span>
-          </Tooltip>
-        </CircleMarker>
-      ))}
+      {pins.map((pin) => {
+        const fillColor =
+          pin.status === "approved" ? "#16a34a" :
+          pin.status === "pending" ? "#f97316" :
+          "#6b7280";
+        const strokeColor =
+          pin.status === "approved" ? "#14532d" :
+          pin.status === "pending" ? "#7c2d12" :
+          "#374151";
+        const radius = pin.status === "none" ? 6 : 9;
+        const fillOpacity = pin.status === "none" ? 0.5 : 0.9;
+
+        return (
+          <CircleMarker
+            key={pin.id}
+            center={[pin.lat, pin.lng]}
+            radius={radius}
+            pathOptions={{ fillColor, fillOpacity, color: strokeColor, weight: 1.5 }}
+          >
+            <Tooltip direction="top" offset={[0, -6]}>
+              <span className="font-semibold">{pin.name}</span>
+              <br />
+              <span className="text-xs text-gray-500">{pin.challengeName}</span>
+            </Tooltip>
+          </CircleMarker>
+        );
+      })}
     </MapContainer>
   );
 }

@@ -21,22 +21,48 @@ export default async function MapaPage({ searchParams }: Props) {
 
   const targetUserId = profileUser?.id ?? session.userId;
 
-  const targets = await prisma.challengeTarget.findMany({
-    where: {
-      latitude: { not: null },
-      longitude: { not: null },
-      checkins: { some: { user_id: targetUserId, status: "APPROVED" } },
-    },
-    include: { challenge: { select: { name: true } } },
+  // Desafios em que o usuário tem pelo menos um check-in
+  const participatingChallengeIds = await prisma.checkIn.findMany({
+    where: { user_id: targetUserId },
+    select: { challenge_id: true },
+    distinct: ["challenge_id"],
   });
+  const challengeIds = participatingChallengeIds.map((c) => c.challenge_id);
 
-  const pins: MapPin[] = targets.map((t) => ({
-    id: t.id,
-    name: t.name,
-    challengeName: t.challenge.name,
-    lat: t.latitude!,
-    lng: t.longitude!,
-  }));
+  const [targets, userCheckIns] = await Promise.all([
+    prisma.challengeTarget.findMany({
+      where: {
+        challenge_id: { in: challengeIds },
+        latitude: { not: null },
+        longitude: { not: null },
+      },
+      include: { challenge: { select: { name: true } } },
+    }),
+    prisma.checkIn.findMany({
+      where: { user_id: targetUserId, challenge_id: { in: challengeIds } },
+      select: { target_id: true, status: true },
+    }),
+  ]);
+
+  const checkInMap = new Map<string, string>();
+  for (const c of userCheckIns) {
+    // APPROVED sobrepõe PENDING se houver os dois
+    if (!checkInMap.has(c.target_id) || c.status === "APPROVED") {
+      checkInMap.set(c.target_id, c.status);
+    }
+  }
+
+  const pins: MapPin[] = targets.map((t) => {
+    const status = checkInMap.get(t.id);
+    return {
+      id: t.id,
+      name: t.name,
+      challengeName: t.challenge.name,
+      lat: t.latitude!,
+      lng: t.longitude!,
+      status: status === "APPROVED" ? "approved" : status === "PENDING" ? "pending" : "none",
+    };
+  });
 
   const displayName = profileUser?.name ?? "Seus";
 
@@ -48,8 +74,13 @@ export default async function MapaPage({ searchParams }: Props) {
         </h1>
         <p className="text-xs text-muted-foreground mt-0.5">
           {pins.length === 0
-            ? "Nenhum local conquistado ainda"
-            : `${pins.length} local${pins.length !== 1 ? "is" : ""} conquistado${pins.length !== 1 ? "s" : ""}`}
+            ? "Nenhum desafio iniciado ainda"
+            : (() => {
+                const approved = pins.filter((p) => p.status === "approved").length;
+                const pending = pins.filter((p) => p.status === "pending").length;
+                const none = pins.filter((p) => p.status === "none").length;
+                return `${approved} visitados · ${pending} aguardando · ${none} a visitar`;
+              })()}
         </p>
       </div>
 
@@ -57,9 +88,9 @@ export default async function MapaPage({ searchParams }: Props) {
         {pins.length === 0 ? (
           <div className="w-full h-full rounded-xl border bg-card flex flex-col items-center justify-center gap-3 text-center p-8">
             <span className="text-5xl">🗺️</span>
-            <p className="font-semibold">Nenhum local no mapa ainda</p>
+            <p className="font-semibold">Nenhum desafio iniciado</p>
             <p className="text-sm text-muted-foreground">
-              Complete um check-in para ver sua conquista aqui!
+              Faça um check-in em qualquer desafio para vê-lo aqui!
             </p>
           </div>
         ) : (
