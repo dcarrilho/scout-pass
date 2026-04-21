@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { verifyModerator } from "@/lib/dal";
+import { verifyModerator, verifySession } from "@/lib/dal";
+import type { MapPin } from "@/components/map/conquest-map";
 
 const TargetSchema = z.object({
   name: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
@@ -88,4 +89,79 @@ export async function deleteTarget(targetId: string, challengeId: string): Promi
   await prisma.challengeTarget.delete({ where: { id: targetId } });
   revalidatePath(`/desafios/${challengeId}`);
   redirect(`/desafios/${challengeId}`);
+}
+
+// ─── Locais próximos ──────────────────────────────────────────────────────────
+
+export type NearbyPin = MapPin & { distanceKm: number };
+
+type RawNearby = {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  challenge_id: string;
+  challengeName: string;
+  distance: number;
+};
+
+export async function findNearbyTargets(
+  lat: number,
+  lng: number,
+  radiusKm: number
+): Promise<NearbyPin[]> {
+  const session = await verifySession();
+
+  const nearby = await prisma.$queryRaw<RawNearby[]>`
+    SELECT
+      ct.id,
+      ct.name,
+      ct.latitude,
+      ct.longitude,
+      ct.challenge_id,
+      c.name AS "challengeName",
+      (6371 * acos(LEAST(1.0,
+        cos(radians(${lat})) * cos(radians(ct.latitude)) *
+        cos(radians(ct.longitude) - radians(${lng})) +
+        sin(radians(${lat})) * sin(radians(ct.latitude))
+      ))) AS distance
+    FROM "ChallengeTarget" ct
+    JOIN "Challenge" c ON c.id = ct.challenge_id
+    WHERE ct.latitude IS NOT NULL AND ct.longitude IS NOT NULL
+      AND (6371 * acos(LEAST(1.0,
+        cos(radians(${lat})) * cos(radians(ct.latitude)) *
+        cos(radians(ct.longitude) - radians(${lng})) +
+        sin(radians(${lat})) * sin(radians(ct.latitude))
+      ))) <= ${radiusKm}
+    ORDER BY distance ASC
+    LIMIT 100
+  `;
+
+  if (nearby.length === 0) return [];
+
+  const targetIds = nearby.map((t) => t.id);
+  const checkIns = await prisma.checkIn.findMany({
+    where: { user_id: session.userId, target_id: { in: targetIds } },
+    select: { target_id: true, status: true },
+  });
+
+  const checkInMap = new Map<string, string>();
+  for (const c of checkIns) {
+    if (!checkInMap.has(c.target_id) || c.status === "APPROVED") {
+      checkInMap.set(c.target_id, c.status);
+    }
+  }
+
+  return nearby.map((t) => {
+    const s = checkInMap.get(t.id);
+    return {
+      id: t.id,
+      name: t.name,
+      challengeName: t.challengeName,
+      lat: t.latitude,
+      lng: t.longitude,
+      status: (s === "APPROVED" ? "approved" : s === "PENDING" ? "pending" : "none") as MapPin["status"],
+      distanceKm: Math.round(t.distance * 10) / 10,
+    };
+  });
 }

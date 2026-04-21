@@ -1,6 +1,8 @@
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { Suspense } from "react";
+import Link from "next/link";
+import { Navigation } from "lucide-react";
 import MapClient from "./map-client";
 import type { MapPin } from "@/components/map/conquest-map";
 
@@ -69,9 +71,21 @@ export default async function MapaPage({ searchParams }: Props) {
   return (
     <main className="max-w-lg mx-auto flex flex-col" style={{ height: "calc(100dvh - 120px)" }}>
       <div className="px-4 pt-4 pb-2 shrink-0">
-        <h1 className="font-bold text-lg">
-          {profileUser ? `Conquistas de ${displayName}` : "Minhas Conquistas"}
-        </h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-bold text-lg">
+            {profileUser ? `Conquistas de ${displayName}` : "Minhas Conquistas"}
+          </h1>
+          {!profileUser && (
+            <Link
+              href="/locais-proximos"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shrink-0 transition-colors"
+              style={{ background: "rgba(249,115,22,0.12)", color: "#f97316", border: "1px solid rgba(249,115,22,0.25)" }}
+            >
+              <Navigation className="size-3.5" />
+              Próximos a mim
+            </Link>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground mt-0.5">
           {pins.length === 0
             ? "Nenhum desafio iniciado ainda"
