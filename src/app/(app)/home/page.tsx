@@ -16,7 +16,19 @@ export default async function HomePage({
   const take = Math.min(Number(takeParam) || DEFAULT_TAKE, 100);
 
   const rows = await prisma.checkIn.findMany({
-    where: { status: "APPROVED" },
+    where: {
+      status: "APPROVED",
+      OR: [
+        { user: { is_private: false } },
+        { user_id: session.userId },
+        {
+          user: {
+            is_private: true,
+            followers: { some: { follower_id: session.userId, status: "ACCEPTED" } },
+          },
+        },
+      ],
+    },
     include: {
       user: { select: { name: true, username: true, avatar_url: true } },
       challenge: { select: { name: true } },
