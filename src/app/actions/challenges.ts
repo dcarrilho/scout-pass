@@ -160,3 +160,135 @@ export async function linkChallengeToSeries(challengeId: string, seriesId: strin
   revalidatePath(`/desafios/serie/${seriesId}`);
   redirect(`/desafios/serie/${seriesId}`);
 }
+
+// ─── Update Organizer ─────────────────────────────────────────────────────────
+
+export async function updateOrganizer(
+  slug: string,
+  state: OrgState,
+  formData: FormData
+): Promise<OrgState> {
+  await verifyModerator();
+
+  const parsed = OrganizerSchema.safeParse({
+    name: formData.get("name"),
+    description: formData.get("description") || undefined,
+  });
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+
+  await prisma.organizer.update({
+    where: { slug },
+    data: { name: parsed.data.name, description: parsed.data.description ?? null },
+  });
+
+  revalidatePath(`/desafios/org/${slug}`);
+  revalidatePath("/desafios");
+  redirect(`/desafios/org/${slug}`);
+}
+
+// ─── Update Series ────────────────────────────────────────────────────────────
+
+export async function updateSeries(
+  id: string,
+  state: SeriesState,
+  formData: FormData
+): Promise<SeriesState> {
+  await verifyModerator();
+
+  const parsed = SeriesSchema.safeParse({
+    name: formData.get("name"),
+    description: formData.get("description") || undefined,
+    icon: formData.get("icon") || undefined,
+    color: formData.get("color") || undefined,
+  });
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+
+  const series = await prisma.series.update({
+    where: { id },
+    data: {
+      name: parsed.data.name,
+      description: parsed.data.description ?? null,
+      icon: parsed.data.icon ?? null,
+      color: parsed.data.color ?? null,
+    },
+    include: { organizer: { select: { slug: true } } },
+  });
+
+  revalidatePath(`/desafios/serie/${id}`);
+  if (series.organizer) revalidatePath(`/desafios/org/${series.organizer.slug}`);
+  redirect(`/desafios/serie/${id}`);
+}
+
+// ─── Update Challenge ─────────────────────────────────────────────────────────
+
+export async function updateChallenge(
+  id: string,
+  state: ChallengeState,
+  formData: FormData
+): Promise<ChallengeState> {
+  await verifyModerator();
+
+  const parsed = ChallengeSchema.safeParse({
+    name: formData.get("name"),
+    description: formData.get("description") || undefined,
+    state_code: formData.get("state_code") || undefined,
+  });
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+
+  await prisma.challenge.update({
+    where: { id },
+    data: {
+      name: parsed.data.name,
+      description: parsed.data.description ?? null,
+      state_code: parsed.data.state_code ?? null,
+    },
+  });
+
+  revalidatePath(`/desafios/${id}`);
+  redirect(`/desafios/${id}`);
+}
+
+// ─── Org Standalone Challenge ─────────────────────────────────────────────────
+
+export async function createOrgChallenge(
+  orgSlug: string,
+  state: ChallengeState,
+  formData: FormData
+): Promise<ChallengeState> {
+  await verifyModerator();
+
+  const parsed = ChallengeSchema.safeParse({
+    name: formData.get("name"),
+    description: formData.get("description") || undefined,
+    state_code: formData.get("state_code") || undefined,
+  });
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+
+  const org = await prisma.organizer.findUnique({ where: { slug: orgSlug } });
+  if (!org) return { message: "Organização não encontrada." };
+
+  await prisma.challenge.create({
+    data: {
+      name: parsed.data.name,
+      description: parsed.data.description,
+      state_code: parsed.data.state_code,
+      organizer_id: org.id,
+      series_id: null,
+    },
+  });
+
+  revalidatePath(`/desafios/org/${orgSlug}`);
+  redirect(`/desafios/org/${orgSlug}`);
+}
+
+export async function linkChallengeToOrg(challengeId: string, orgSlug: string) {
+  await verifyModerator();
+  const org = await prisma.organizer.findUnique({ where: { slug: orgSlug } });
+  if (!org) return;
+  await prisma.challenge.update({
+    where: { id: challengeId },
+    data: { organizer_id: org.id },
+  });
+  revalidatePath(`/desafios/org/${orgSlug}`);
+  redirect(`/desafios/org/${orgSlug}`);
+}

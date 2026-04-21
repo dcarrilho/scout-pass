@@ -72,7 +72,17 @@ export default async function DesafioDetailPage({ params, searchParams }: Props)
       <div className="p-4 space-y-6">
         {/* Header + progress */}
         <div className="space-y-3">
-          <h1 className="text-2xl font-bold leading-tight">{challenge.name}</h1>
+          <div className="flex items-start justify-between gap-2">
+            <h1 className="text-2xl font-bold leading-tight flex-1">{challenge.name}</h1>
+            {(session.role === "MODERATOR" || session.role === "ADMIN") && (
+              <Link
+                href={`/desafios/${id}/editar`}
+                className="rounded-full border px-2.5 py-0.5 text-xs font-medium hover:bg-muted transition-colors shrink-0 mt-1"
+              >
+                Editar
+              </Link>
+            )}
+          </div>
           {challenge.description && (
             <p className="text-sm text-muted-foreground">{challenge.description}</p>
           )}

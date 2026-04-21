@@ -66,8 +66,18 @@ export default async function SeriesPage({ params }: Props) {
               {series.icon}
             </div>
           )}
-          <div>
-            <h1 className="text-xl font-bold">{series.name}</h1>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold">{series.name}</h1>
+              {isMod && (
+                <Link
+                  href={`/desafios/serie/${id}/editar`}
+                  className="rounded-full border px-2.5 py-0.5 text-xs font-medium hover:bg-muted transition-colors shrink-0"
+                >
+                  Editar
+                </Link>
+              )}
+            </div>
             {series.description && <p className="text-sm text-muted-foreground">{series.description}</p>}
           </div>
         </div>

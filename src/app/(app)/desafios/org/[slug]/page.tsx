@@ -76,7 +76,17 @@ export default async function OrganizerPage({ params }: Props) {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold">{org.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold">{org.name}</h1>
+              {isMod && (
+                <Link
+                  href={`/desafios/org/${slug}/editar`}
+                  className="rounded-full border px-2.5 py-0.5 text-xs font-medium hover:bg-muted transition-colors shrink-0"
+                >
+                  Editar
+                </Link>
+              )}
+            </div>
             {org.description && <p className="text-sm text-muted-foreground">{org.description}</p>}
           </div>
         </div>
@@ -97,21 +107,27 @@ export default async function OrganizerPage({ params }: Props) {
           </div>
         )}
 
-        {/* Series management */}
+        {/* Management buttons */}
         {isMod && (
-          <div className="flex gap-2">
-            <Link
-              href={`/desafios/org/${slug}/nova-serie`}
-              className="rounded-full border border-primary text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-colors"
-            >
-              + Nova série
-            </Link>
-            <Link
-              href={`/desafios/org/${slug}/adicionar-serie`}
-              className="rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-muted transition-colors"
-            >
-              Adicionar série existente
-            </Link>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Séries</p>
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/desafios/org/${slug}/nova-serie`} className="rounded-full border border-primary text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-colors">
+                + Nova série
+              </Link>
+              <Link href={`/desafios/org/${slug}/adicionar-serie`} className="rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-muted transition-colors">
+                Adicionar existente
+              </Link>
+            </div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-1">Desafios avulsos</p>
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/desafios/org/${slug}/novo-desafio`} className="rounded-full border border-primary text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-colors">
+                + Novo desafio
+              </Link>
+              <Link href={`/desafios/org/${slug}/adicionar-desafio`} className="rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-muted transition-colors">
+                Adicionar existente
+              </Link>
+            </div>
           </div>
         )}
 
