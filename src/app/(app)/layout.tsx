@@ -2,6 +2,7 @@ import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import GlobalHeader from "@/components/layout/global-header";
 import BottomNav from "@/components/layout/bottom-nav";
+import InstallPrompt from "@/components/pwa/install-prompt";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await verifySession();
@@ -27,6 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         pendingCount={pendingCount}
       />
       {children}
+      <InstallPrompt />
       <BottomNav username={user?.username ?? ""} isModerator={isModerator} />
     </div>
   );
