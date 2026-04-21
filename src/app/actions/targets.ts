@@ -45,12 +45,12 @@ export async function createTarget(
 
   await prisma.challengeTarget.create({
     data: {
-      challenge_id: challengeId,
       name: parsed.data.name,
       type: parsed.data.type,
       order: parsed.data.order,
       latitude: parsed.data.latitude ?? null,
       longitude: parsed.data.longitude ?? null,
+      challenges: { connect: { id: challengeId } },
     },
   });
 
@@ -84,9 +84,45 @@ export async function updateTarget(
   redirect(`/desafios/${challengeId}`);
 }
 
-export async function deleteTarget(targetId: string, challengeId: string): Promise<void> {
+// Remove target from a challenge (unlink). Deletes entirely if no other challenges use it.
+export async function unlinkTarget(targetId: string, challengeId: string): Promise<void> {
   await verifyModerator();
-  await prisma.challengeTarget.delete({ where: { id: targetId } });
+
+  await prisma.challengeTarget.update({
+    where: { id: targetId },
+    data: { challenges: { disconnect: { id: challengeId } } },
+  });
+
+  // Clean up orphaned targets
+  const target = await prisma.challengeTarget.findUnique({
+    where: { id: targetId },
+    select: { _count: { select: { challenges: true } } },
+  });
+  if (target?._count.challenges === 0) {
+    await prisma.challengeTarget.delete({ where: { id: targetId } });
+  }
+
+  revalidatePath(`/desafios/${challengeId}`);
+  redirect(`/desafios/${challengeId}`);
+}
+
+// Link an existing target to a challenge
+export async function linkTargetToChallenge(
+  targetId: string,
+  challengeId: string,
+  state: TargetState,
+  _formData: FormData
+): Promise<TargetState> {
+  await verifyModerator();
+
+  const target = await prisma.challengeTarget.findUnique({ where: { id: targetId } });
+  if (!target) return { message: "Waypoint não encontrado." };
+
+  await prisma.challengeTarget.update({
+    where: { id: targetId },
+    data: { challenges: { connect: { id: challengeId } } },
+  });
+
   revalidatePath(`/desafios/${challengeId}`);
   redirect(`/desafios/${challengeId}`);
 }
@@ -113,12 +149,12 @@ export async function findNearbyTargets(
   const session = await verifySession();
 
   const nearby = await prisma.$queryRaw<RawNearby[]>`
-    SELECT
+    SELECT DISTINCT ON (ct.id)
       ct.id,
       ct.name,
       ct.latitude,
       ct.longitude,
-      ct.challenge_id,
+      c.id AS challenge_id,
       c.name AS "challengeName",
       (6371 * acos(LEAST(1.0,
         cos(radians(${lat})) * cos(radians(ct.latitude)) *
@@ -126,14 +162,15 @@ export async function findNearbyTargets(
         sin(radians(${lat})) * sin(radians(ct.latitude))
       ))) AS distance
     FROM "ChallengeTarget" ct
-    JOIN "Challenge" c ON c.id = ct.challenge_id
+    JOIN "_ChallengeTargets" ct_link ON ct_link."B" = ct.id
+    JOIN "Challenge" c ON c.id = ct_link."A"
     WHERE ct.latitude IS NOT NULL AND ct.longitude IS NOT NULL
       AND (6371 * acos(LEAST(1.0,
         cos(radians(${lat})) * cos(radians(ct.latitude)) *
         cos(radians(ct.longitude) - radians(${lng})) +
         sin(radians(${lat})) * sin(radians(ct.latitude))
       ))) <= ${radiusKm}
-    ORDER BY distance ASC
+    ORDER BY ct.id, distance ASC
     LIMIT 100
   `;
 
@@ -152,16 +189,18 @@ export async function findNearbyTargets(
     }
   }
 
-  return nearby.map((t) => {
-    const s = checkInMap.get(t.id);
-    return {
-      id: t.id,
-      name: t.name,
-      challengeName: t.challengeName,
-      lat: t.latitude,
-      lng: t.longitude,
-      status: (s === "APPROVED" ? "approved" : s === "PENDING" ? "pending" : "none") as MapPin["status"],
-      distanceKm: Math.round(t.distance * 10) / 10,
-    };
-  });
+  return nearby
+    .sort((a, b) => a.distance - b.distance)
+    .map((t) => {
+      const s = checkInMap.get(t.id);
+      return {
+        id: t.id,
+        name: t.name,
+        challengeName: t.challengeName,
+        lat: t.latitude,
+        lng: t.longitude,
+        status: (s === "APPROVED" ? "approved" : s === "PENDING" ? "pending" : "none") as MapPin["status"],
+        distanceKm: Math.round(t.distance * 10) / 10,
+      };
+    });
 }

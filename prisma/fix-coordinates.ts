@@ -97,7 +97,7 @@ async function main() {
 
     // Buscar waypoints sem coordenadas
     const targets = await prisma.challengeTarget.findMany({
-      where: { challenge_id: challenge.id, latitude: null },
+      where: { challenges: { some: { id: challenge.id } }, latitude: null },
       select: { id: true, name: true },
     });
 

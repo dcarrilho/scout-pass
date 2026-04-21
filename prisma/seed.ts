@@ -103,7 +103,7 @@ async function seedBandeirante() {
   for (const capital of CAPITALS) {
     await prisma.challengeTarget.create({
       data: {
-        challenge_id: challenge.id,
+        challenges: { connect: { id: challenge.id } },
         name: capital.name,
         latitude: capital.lat,
         longitude: capital.lng,
@@ -133,7 +133,7 @@ async function seedCardeal() {
   for (const extreme of EXTREMES) {
     await prisma.challengeTarget.create({
       data: {
-        challenge_id: challenge.id,
+        challenges: { connect: { id: challenge.id } },
         name: extreme.name,
         latitude: extreme.lat,
         longitude: extreme.lng,
@@ -173,7 +173,7 @@ async function seedValente() {
       const coords = centroids[String(municipio.id)];
       await prisma.challengeTarget.create({
         data: {
-          challenge_id: challenge.id,
+          challenges: { connect: { id: challenge.id } },
           name: municipio.nome,
           latitude: coords?.lat ?? null,
           longitude: coords?.lng ?? null,

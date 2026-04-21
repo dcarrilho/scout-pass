@@ -145,22 +145,21 @@ model Challenge {
   state_code   String?
   cover_url    String?
   is_active    Boolean           @default(true)
-  targets      ChallengeTarget[]
+  targets      ChallengeTarget[] @relation("ChallengeTargets")
   checkins     CheckIn[]
   created_at   DateTime          @default(now())
 }
 
 model ChallengeTarget {
-  id           String     @id @default(cuid())
-  challenge_id String
-  challenge    Challenge  @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
-  name         String
-  latitude     Float?
-  longitude    Float?
-  order        Int        @default(0)
-  type         TargetType @default(CITY)
-  checkins     CheckIn[]
-  created_at   DateTime   @default(now())
+  id         String      @id @default(cuid())
+  name       String
+  latitude   Float?
+  longitude  Float?
+  order      Int         @default(0)
+  type       TargetType  @default(CITY)
+  checkins   CheckIn[]
+  challenges Challenge[] @relation("ChallengeTargets")
+  created_at DateTime    @default(now())
 }
 
 model CheckIn {

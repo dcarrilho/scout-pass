@@ -4,7 +4,7 @@ import { ChevronLeft, Trash2 } from "lucide-react";
 import { verifyModerator } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { EditWaypointForm } from "./edit-waypoint-form";
-import { deleteTarget } from "@/app/actions/targets";
+import { unlinkTarget } from "@/app/actions/targets";
 
 type Props = { params: Promise<{ id: string; targetId: string }> };
 
@@ -12,13 +12,14 @@ export default async function EditarWaypointPage({ params }: Props) {
   await verifyModerator();
   const { id, targetId } = await params;
 
-  const target = await prisma.challengeTarget.findUnique({
-    where: { id: targetId },
-    include: { challenge: { select: { name: true } } },
+  const target = await prisma.challengeTarget.findFirst({
+    where: { id: targetId, challenges: { some: { id } } },
+    include: { challenges: { where: { id }, select: { name: true } } },
   });
-  if (!target || target.challenge_id !== id) notFound();
+  if (!target) notFound();
 
-  const deleteAction = deleteTarget.bind(null, targetId, id);
+  const challengeName = target.challenges[0]?.name ?? "";
+  const unlinkAction = unlinkTarget.bind(null, targetId, id);
 
   return (
     <main className="min-h-screen max-w-2xl mx-auto">
@@ -28,21 +29,21 @@ export default async function EditarWaypointPage({ params }: Props) {
           className="inline-flex items-center gap-1 text-sm text-white/45 hover:text-white/80 transition-colors"
         >
           <ChevronLeft className="size-4" />
-          {target.challenge.name}
+          {challengeName}
         </Link>
       </div>
 
       <div className="px-4 py-4 space-y-6">
         <div className="flex items-start justify-between gap-3">
           <h1 className="text-xl font-bold text-white">Editar waypoint</h1>
-          <form action={deleteAction}>
+          <form action={unlinkAction}>
             <button
               type="submit"
               className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
               style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)" }}
             >
               <Trash2 className="size-3.5" />
-              Remover
+              Remover do desafio
             </button>
           </form>
         </div>
