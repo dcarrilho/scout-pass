@@ -33,6 +33,19 @@ function parseForm(formData: FormData) {
   });
 }
 
+async function resolveCoords(
+  cityId: string | null,
+  lat: number | undefined,
+  lng: number | undefined
+): Promise<{ latitude: number | null; longitude: number | null }> {
+  if (lat != null && lng != null) return { latitude: lat, longitude: lng };
+  if (cityId) {
+    const city = await prisma.city.findUnique({ where: { id: cityId }, select: { latitude: true, longitude: true } });
+    if (city) return { latitude: city.latitude, longitude: city.longitude };
+  }
+  return { latitude: null, longitude: null };
+}
+
 export async function createTarget(
   challengeId: string,
   state: TargetState,
@@ -43,13 +56,17 @@ export async function createTarget(
   const parsed = parseForm(formData);
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
+  const cityId = (formData.get("city_id") as string) || null;
+  const coords = await resolveCoords(cityId, parsed.data.latitude, parsed.data.longitude);
+
   await prisma.challengeTarget.create({
     data: {
       name: parsed.data.name,
       type: parsed.data.type,
       order: parsed.data.order,
-      latitude: parsed.data.latitude ?? null,
-      longitude: parsed.data.longitude ?? null,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      city_id: cityId,
       challenges: { connect: { id: challengeId } },
     },
   });
@@ -69,14 +86,18 @@ export async function updateTarget(
   const parsed = parseForm(formData);
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
+  const cityId = (formData.get("city_id") as string) || null;
+  const coords = await resolveCoords(cityId, parsed.data.latitude, parsed.data.longitude);
+
   await prisma.challengeTarget.update({
     where: { id: targetId },
     data: {
       name: parsed.data.name,
       type: parsed.data.type,
       order: parsed.data.order,
-      latitude: parsed.data.latitude ?? null,
-      longitude: parsed.data.longitude ?? null,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      city_id: cityId,
     },
   });
 

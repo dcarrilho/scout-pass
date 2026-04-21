@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { updateTarget } from "@/app/actions/targets";
 import { DarkField, DarkInput, DarkSelect, DarkSubmit, FormError } from "@/components/ui/dark-form";
+import { CityPicker } from "@/components/challenges/city-picker";
 
 const TARGET_TYPES = [
   { value: "CITY", label: "Cidade" },
@@ -19,9 +20,13 @@ type Props = {
   order: number;
   latitude?: number | null;
   longitude?: number | null;
+  cityId?: string | null;
+  cityName?: string | null;
+  cityState?: string | null;
+  cityRegion?: string | null;
 };
 
-export function EditWaypointForm({ targetId, challengeId, name, type, order, latitude, longitude }: Props) {
+export function EditWaypointForm({ targetId, challengeId, name, type, order, latitude, longitude, cityId, cityName, cityState, cityRegion }: Props) {
   const [state, action, pending] = useActionState(
     updateTarget.bind(null, targetId, challengeId),
     undefined
@@ -40,6 +45,16 @@ export function EditWaypointForm({ targetId, challengeId, name, type, order, lat
           ))}
         </DarkSelect>
       </DarkField>
+
+      <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <p className="text-xs font-semibold text-white/35 uppercase tracking-widest">Município</p>
+        <CityPicker
+          currentCityId={cityId}
+          currentCityName={cityName}
+          currentState={cityState}
+          currentRegion={cityRegion}
+        />
+      </div>
 
       <DarkField label="Ordem" hint="Número para ordenação na lista">
         <DarkInput name="order" type="number" defaultValue={String(order)} />

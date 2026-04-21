@@ -150,9 +150,22 @@ model Challenge {
   created_at   DateTime          @default(now())
 }
 
+model City {
+  id        String            @id @default(cuid())
+  ibge_code String            @unique
+  name      String
+  state     String
+  region    String
+  latitude  Float?
+  longitude Float?
+  targets   ChallengeTarget[]
+}
+
 model ChallengeTarget {
   id         String      @id @default(cuid())
   name       String
+  city_id    String?
+  city       City?       @relation(fields: [city_id], references: [id])
   latitude   Float?
   longitude  Float?
   order      Int         @default(0)

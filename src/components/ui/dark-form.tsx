@@ -77,8 +77,16 @@ export function DarkSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>)
   return (
     <select
       {...props}
-      className={inputCls + " " + (props.className ?? "")}
-      style={{ ...inputStyle, ...props.style }}
+      className={inputCls + " appearance-none " + (props.className ?? "")}
+      style={{
+        ...inputStyle,
+        colorScheme: "dark",
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "right 14px center",
+        paddingRight: "36px",
+        ...props.style,
+      }}
       onFocus={(e) => {
         e.target.style.borderColor = "rgba(249,115,22,0.5)";
         props.onFocus?.(e);
