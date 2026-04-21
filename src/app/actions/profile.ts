@@ -8,11 +8,13 @@ import bcrypt from "bcryptjs";
 import {
   ProfileSchema,
   EditAccountSchema,
+  EditProfileFullSchema,
   MotorcycleSchema,
   MotorcycleEditSchema,
   ChangePasswordSchema,
   ProfileFormState,
   EditAccountFormState,
+  EditProfileFullFormState,
   MotorcycleFormState,
   MotorcycleEditFormState,
   ChangePasswordFormState,
@@ -109,6 +111,78 @@ export async function updateAccount(
 
   revalidatePath(`/perfil/${validated.data.username}`);
   return { success: true, newUsername: validated.data.username };
+}
+
+export async function updateProfileFull(
+  state: EditProfileFullFormState,
+  formData: FormData
+): Promise<EditProfileFullFormState> {
+  const session = await verifySession();
+
+  const validated = EditProfileFullSchema.safeParse({
+    name: formData.get("name"),
+    bio: formData.get("bio") || undefined,
+    is_private: formData.get("is_private") === "on",
+    username: formData.get("username"),
+    email: formData.get("email"),
+  });
+
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+
+  const existing = await prisma.user.findFirst({
+    where: {
+      OR: [{ username: validated.data.username }, { email: validated.data.email }],
+      NOT: { id: session.userId },
+    },
+  });
+
+  if (existing) {
+    if (existing.username === validated.data.username) {
+      return { errors: { username: ["Este usuário já está em uso."] } };
+    }
+    return { errors: { email: ["Este e-mail já está em uso."] } };
+  }
+
+  const avatarFile = formData.get("avatar") as File | null;
+  const coverFile = formData.get("cover") as File | null;
+  let avatar_url: string | undefined;
+  let cover_url: string | undefined;
+
+  if (avatarFile && avatarFile.size > 0) {
+    try {
+      avatar_url = await uploadAvatar(session.userId, avatarFile);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      return { message: `Erro ao enviar o avatar: ${msg}` };
+    }
+  }
+
+  if (coverFile && coverFile.size > 0) {
+    try {
+      cover_url = await uploadCover(session.userId, coverFile);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      return { message: `Erro ao enviar a capa: ${msg}` };
+    }
+  }
+
+  await prisma.user.update({
+    where: { id: session.userId },
+    data: {
+      name: validated.data.name,
+      bio: validated.data.bio ?? null,
+      is_private: validated.data.is_private,
+      username: validated.data.username,
+      email: validated.data.email,
+      ...(avatar_url && { avatar_url }),
+      ...(cover_url && { cover_url }),
+    },
+  });
+
+  revalidatePath(`/perfil/${validated.data.username}`);
+  return { success: true, username: validated.data.username };
 }
 
 export async function changePassword(

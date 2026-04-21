@@ -2,8 +2,8 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, ImagePlus } from "lucide-react";
-import { updateProfile } from "@/app/actions/profile";
+import { AlertTriangle, Camera, ImagePlus } from "lucide-react";
+import { updateProfileFull } from "@/app/actions/profile";
 import { DarkInput, DarkTextarea, DarkField, DarkSubmit, FormError } from "@/components/ui/dark-form";
 
 const BIO_MAX = 160;
@@ -15,11 +15,12 @@ type Props = {
   coverUrl: string | null;
   isPrivate: boolean;
   username: string;
+  email: string;
 };
 
-export default function ProfileForm({ name, bio, avatarUrl, coverUrl, isPrivate, username }: Props) {
+export default function ProfileForm({ name, bio, avatarUrl, coverUrl, isPrivate, username, email }: Props) {
   const router = useRouter();
-  const [state, action, pending] = useActionState(updateProfile, undefined);
+  const [state, action, pending] = useActionState(updateProfileFull, undefined);
   const avatarRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -70,7 +71,7 @@ export default function ProfileForm({ name, bio, avatarUrl, coverUrl, isPrivate,
           onChange={(e) => { const f = e.target.files?.[0]; if (f) setCoverPreview(URL.createObjectURL(f)); }} />
       </div>
 
-      {/* Avatar + hint */}
+      {/* Avatar */}
       <div className="flex items-center gap-5">
         <button
           type="button"
@@ -124,6 +125,26 @@ export default function ProfileForm({ name, bio, avatarUrl, coverUrl, isPrivate,
         />
         {state?.errors?.bio?.[0] && <p className="text-xs text-red-400">{state.errors.bio[0]}</p>}
       </div>
+
+      {/* Separador de conta */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "4px" }}>
+        <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-4">Dados da conta</p>
+      </div>
+
+      <DarkField label="Usuário" hint="Apenas letras minúsculas, números e _" error={state?.errors?.username?.[0]}>
+        <DarkInput id="username" name="username" defaultValue={username} required />
+      </DarkField>
+
+      <div className="flex items-start gap-2 rounded-xl px-3 py-2.5" style={{ background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)" }}>
+        <AlertTriangle className="size-4 text-orange-400 shrink-0 mt-0.5" />
+        <p className="text-xs" style={{ color: "rgba(249,115,22,0.85)" }}>
+          Alterar o usuário quebra links já compartilhados do seu perfil.
+        </p>
+      </div>
+
+      <DarkField label="E-mail" error={state?.errors?.email?.[0]}>
+        <DarkInput id="email" name="email" type="email" defaultValue={email} required />
+      </DarkField>
 
       {/* Toggle perfil privado */}
       <label className="flex items-center gap-4 cursor-pointer select-none">

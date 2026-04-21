@@ -97,6 +97,17 @@ export type MotorcycleEditFormState =
   | { errors?: { brand?: string[]; model?: string[]; year?: string[]; license_plate?: string[] }; message?: string; success?: boolean }
   | undefined;
 
+export const EditProfileFullSchema = ProfileSchema.merge(EditAccountSchema);
+
+export type EditProfileFullFormState =
+  | {
+      errors?: { name?: string[]; bio?: string[]; username?: string[]; email?: string[] };
+      message?: string;
+      success?: boolean;
+      username?: string;
+    }
+  | undefined;
+
 export const ChangePasswordSchema = z
   .object({
     current_password: z.string().min(1, { message: "Informe a senha atual." }),

@@ -36,16 +36,24 @@ export default async function EditarPerfilPage() {
             <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Perfil</h2>
           </div>
           <div style={{ padding: "20px" }}>
-            <ProfileForm name={user.name} bio={user.bio} avatarUrl={user.avatar_url} coverUrl={user.cover_url ?? null} isPrivate={user.is_private} username={user.username} />
+            <ProfileForm
+              name={user.name}
+              bio={user.bio}
+              avatarUrl={user.avatar_url}
+              coverUrl={user.cover_url ?? null}
+              isPrivate={user.is_private}
+              username={user.username}
+              email={user.email}
+            />
           </div>
         </section>
 
         <section style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16 }}>
           <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Conta</h2>
+            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Segurança</h2>
           </div>
           <div style={{ padding: "20px" }}>
-            <AccountForm username={user.username} email={user.email} />
+            <AccountForm />
           </div>
         </section>
 
