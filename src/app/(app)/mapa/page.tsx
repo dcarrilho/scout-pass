@@ -23,13 +23,12 @@ export default async function MapaPage({ searchParams }: Props) {
 
   const targetUserId = profileUser?.id ?? session.userId;
 
-  // Desafios em que o usuário tem pelo menos um check-in
-  const participatingChallengeIds = await prisma.checkIn.findMany({
+  // Desafios em que o usuário está participando
+  const participatingChallenges = await prisma.challengeParticipant.findMany({
     where: { user_id: targetUserId },
     select: { challenge_id: true },
-    distinct: ["challenge_id"],
   });
-  const challengeIds = participatingChallengeIds.map((c) => c.challenge_id);
+  const challengeIds = participatingChallenges.map((c) => c.challenge_id);
 
   const [targets, userCheckIns] = await Promise.all([
     prisma.challengeTarget.findMany({
@@ -88,7 +87,7 @@ export default async function MapaPage({ searchParams }: Props) {
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">
           {pins.length === 0
-            ? "Nenhum desafio iniciado ainda"
+            ? "Nenhum desafio com waypoints mapeados"
             : (() => {
                 const approved = pins.filter((p) => p.status === "approved").length;
                 const pending = pins.filter((p) => p.status === "pending").length;
@@ -102,9 +101,9 @@ export default async function MapaPage({ searchParams }: Props) {
         {pins.length === 0 ? (
           <div className="w-full h-full rounded-xl border bg-card flex flex-col items-center justify-center gap-3 text-center p-8">
             <span className="text-5xl">🗺️</span>
-            <p className="font-semibold">Nenhum desafio iniciado</p>
+            <p className="font-semibold">Nenhum desafio no mapa</p>
             <p className="text-sm text-muted-foreground">
-              Faça um check-in em qualquer desafio para vê-lo aqui!
+              Participe de um desafio para ver os waypoints aqui.
             </p>
           </div>
         ) : (
