@@ -13,7 +13,7 @@ export default async function EditarSeriePage({ params }: Props) {
 
   const series = await prisma.series.findUnique({
     where: { id },
-    select: { name: true, description: true, icon: true, color: true, organizer: { select: { slug: true } } },
+    select: { name: true, description: true, icon: true, color: true, cover_url: true, organizer: { select: { slug: true } } },
   });
   if (!series) notFound();
 
@@ -29,7 +29,7 @@ export default async function EditarSeriePage({ params }: Props) {
       </div>
       <div className="px-4 py-4 space-y-6">
         <h1 className="text-xl font-bold text-white">Editar série</h1>
-        <EditSeriesForm id={id} name={series.name} description={series.description} icon={series.icon} color={series.color} />
+        <EditSeriesForm id={id} name={series.name} description={series.description} icon={series.icon} color={series.color} coverUrl={series.cover_url} />
       </div>
     </main>
   );

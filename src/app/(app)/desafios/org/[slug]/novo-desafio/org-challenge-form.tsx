@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { createOrgChallenge } from "@/app/actions/challenges";
-import { DarkField, DarkInput, DarkTextarea, DarkSelect, DarkSubmit, FormError } from "@/components/ui/dark-form";
+import { DarkField, DarkInput, DarkTextarea, DarkSelect, DarkSubmit, FormError, DarkCoverPicker } from "@/components/ui/dark-form";
 
 const STATES = [
   "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT",
@@ -16,6 +16,8 @@ export function OrgChallengeForm({ orgSlug }: Props) {
 
   return (
     <form action={action} className="space-y-4">
+      <DarkCoverPicker />
+
       <DarkField label="Nome *" error={state?.errors?.name?.[0]}>
         <DarkInput name="name" placeholder="Ex: Chapada dos Veadeiros" />
       </DarkField>

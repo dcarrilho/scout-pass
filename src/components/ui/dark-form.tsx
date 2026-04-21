@@ -1,4 +1,7 @@
-import React from "react";
+"use client";
+
+import React, { useRef, useState } from "react";
+import { ImagePlus } from "lucide-react";
 
 export const inputCls =
   "w-full rounded-xl px-4 py-3 text-sm text-white/90 outline-none transition-colors placeholder:text-white/30";
@@ -104,4 +107,47 @@ export function DarkSubmit({ pending, label, pendingLabel }: { pending: boolean;
 export function FormError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="text-sm text-red-400">{message}</p>;
+}
+
+export function DarkCoverPicker({ currentUrl }: { currentUrl?: string | null }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const display = preview ?? currentUrl;
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-white/75">Imagem de capa <span style={{ color: "rgba(255,255,255,0.3)" }}>(opcional)</span></label>
+      <button
+        type="button"
+        onClick={() => ref.current?.click()}
+        className="relative w-full h-28 rounded-xl overflow-hidden group"
+        style={{ border: "1px dashed rgba(255,255,255,0.2)" }}
+      >
+        {display ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={display} alt="Capa" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2"
+            style={{ background: "repeating-linear-gradient(135deg, #1a1614 0 10px, #141210 10px 20px)" }}>
+            <ImagePlus className="size-6 text-white/30" />
+            <span className="text-xs text-white/40">Toque para adicionar capa</span>
+          </div>
+        )}
+        <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ background: "rgba(0,0,0,0.5)" }}>
+          <ImagePlus className="size-5 text-white" />
+          <span className="text-sm text-white font-medium">{display ? "Alterar capa" : "Adicionar capa"}</span>
+        </div>
+      </button>
+      <input
+        ref={ref}
+        name="cover"
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) setPreview(URL.createObjectURL(f)); }}
+      />
+      {preview && <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>Nova capa selecionada ✓</p>}
+    </div>
+  );
 }

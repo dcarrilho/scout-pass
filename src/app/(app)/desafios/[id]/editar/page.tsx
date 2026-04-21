@@ -13,7 +13,7 @@ export default async function EditarDesafioPage({ params }: Props) {
 
   const challenge = await prisma.challenge.findUnique({
     where: { id },
-    select: { name: true, description: true, state_code: true },
+    select: { name: true, description: true, state_code: true, cover_url: true },
   });
   if (!challenge) notFound();
 
@@ -27,7 +27,7 @@ export default async function EditarDesafioPage({ params }: Props) {
       </div>
       <div className="px-4 py-4 space-y-6">
         <h1 className="text-xl font-bold text-white">Editar desafio</h1>
-        <EditChallengeForm id={id} name={challenge.name} description={challenge.description} state_code={challenge.state_code} />
+        <EditChallengeForm id={id} name={challenge.name} description={challenge.description} state_code={challenge.state_code} coverUrl={challenge.cover_url} />
       </div>
     </main>
   );

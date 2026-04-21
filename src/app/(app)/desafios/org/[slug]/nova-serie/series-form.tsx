@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { createSeries } from "@/app/actions/challenges";
-import { DarkField, DarkInput, DarkTextarea, DarkSubmit, FormError } from "@/components/ui/dark-form";
+import { DarkField, DarkInput, DarkTextarea, DarkSubmit, FormError, DarkCoverPicker } from "@/components/ui/dark-form";
 
 const COLORS = [
   { key: "blue",    label: "Azul",    dot: "#3b82f6" },
@@ -22,6 +22,7 @@ export function SeriesForm({ organizerId }: Props) {
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="organizer_id" value={organizerId} />
+      <DarkCoverPicker />
 
       <DarkField label="Nome *" error={state?.errors?.name?.[0]}>
         <DarkInput name="name" placeholder="Ex: Série Valente" />

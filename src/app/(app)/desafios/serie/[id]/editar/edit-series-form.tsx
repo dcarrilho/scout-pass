@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { updateSeries } from "@/app/actions/challenges";
-import { DarkField, DarkInput, DarkTextarea, DarkSubmit, FormError } from "@/components/ui/dark-form";
+import { DarkField, DarkInput, DarkTextarea, DarkSubmit, FormError, DarkCoverPicker } from "@/components/ui/dark-form";
 
 const COLORS = [
   { key: "blue",    label: "Azul",    dot: "#3b82f6" },
@@ -14,13 +14,15 @@ const COLORS = [
   { key: "slate",   label: "Cinza",   dot: "#64748b" },
 ];
 
-type Props = { id: string; name: string; description?: string | null; icon?: string | null; color?: string | null };
+type Props = { id: string; name: string; description?: string | null; icon?: string | null; color?: string | null; coverUrl?: string | null };
 
-export function EditSeriesForm({ id, name, description, icon, color }: Props) {
+export function EditSeriesForm({ id, name, description, icon, color, coverUrl }: Props) {
   const [state, action, pending] = useActionState(updateSeries.bind(null, id), undefined);
 
   return (
     <form action={action} className="space-y-4">
+      <DarkCoverPicker currentUrl={coverUrl} />
+
       <DarkField label="Nome *" error={state?.errors?.name?.[0]}>
         <DarkInput name="name" defaultValue={name} />
       </DarkField>

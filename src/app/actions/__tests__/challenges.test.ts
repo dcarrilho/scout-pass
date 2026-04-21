@@ -221,10 +221,12 @@ describe("updateOrganizer", () => {
       updateOrganizer("moto-clube", undefined, fd({ name: "Moto Clube Atualizado", description: "Nova desc" }))
     ).rejects.toThrow("NEXT_REDIRECT");
 
-    expect(mockOrgUpdate).toHaveBeenCalledWith({
-      where: { slug: "moto-clube" },
-      data: { name: "Moto Clube Atualizado", description: "Nova desc" },
-    });
+    expect(mockOrgUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { slug: "moto-clube" },
+        data: { name: "Moto Clube Atualizado", description: "Nova desc" },
+      })
+    );
     expect(mockRevalidate).toHaveBeenCalledWith("/desafios/org/moto-clube");
     expect(mockRedirect).toHaveBeenCalledWith("/desafios/org/moto-clube");
   });

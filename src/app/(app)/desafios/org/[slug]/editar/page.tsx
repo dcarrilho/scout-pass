@@ -13,7 +13,7 @@ export default async function EditarOrgPage({ params }: Props) {
 
   const org = await prisma.organizer.findUnique({
     where: { slug },
-    select: { name: true, description: true },
+    select: { name: true, description: true, cover_url: true },
   });
   if (!org) notFound();
 
@@ -27,7 +27,7 @@ export default async function EditarOrgPage({ params }: Props) {
       </div>
       <div className="px-4 py-4 space-y-6">
         <h1 className="text-xl font-bold text-white">Editar organização</h1>
-        <EditOrgForm slug={slug} name={org.name} description={org.description} />
+        <EditOrgForm slug={slug} name={org.name} description={org.description} coverUrl={org.cover_url} />
       </div>
     </main>
   );

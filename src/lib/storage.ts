@@ -46,6 +46,22 @@ export async function uploadCover(userId: string, file: File): Promise<string> {
   return `${data.publicUrl}?t=${Date.now()}`;
 }
 
+export async function uploadEntityCover(folder: string, id: string, file: File): Promise<string> {
+  await ensureBucket();
+
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `covers/${folder}/${id}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("scoutpass")
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (error) throw new Error(`Storage: ${error.message}`);
+
+  const { data } = supabase.storage.from("scoutpass").getPublicUrl(path);
+  return `${data.publicUrl}?t=${Date.now()}`;
+}
+
 export async function uploadCheckInPhoto(userId: string, file: File): Promise<string> {
   await ensureBucket();
 

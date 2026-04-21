@@ -112,6 +112,7 @@ model Organizer {
   slug        String      @unique
   description String?
   logo_url    String?
+  cover_url   String?
   is_active   Boolean     @default(true)
   series      Series[]
   challenges  Challenge[]
@@ -126,6 +127,7 @@ model Series {
   description  String?
   icon         String?
   color        String?
+  cover_url    String?
   order        Int         @default(0)
   is_active    Boolean     @default(true)
   challenges   Challenge[]
@@ -141,6 +143,7 @@ model Challenge {
   name         String
   description  String?
   state_code   String?
+  cover_url    String?
   is_active    Boolean           @default(true)
   targets      ChallengeTarget[]
   checkins     CheckIn[]

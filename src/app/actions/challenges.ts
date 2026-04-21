@@ -5,6 +5,13 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { verifyModerator } from "@/lib/dal";
+import { uploadEntityCover } from "@/lib/storage";
+
+async function extractCover(folder: string, id: string, formData: FormData): Promise<string | undefined> {
+  const file = formData.get("cover") as File | null;
+  if (!file || file.size === 0) return undefined;
+  return uploadEntityCover(folder, id, file);
+}
 
 function slugify(str: string) {
   return str
@@ -43,9 +50,12 @@ export async function createOrganizer(state: OrgState, formData: FormData): Prom
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
   const slug = await uniqueSlug(parsed.data.name);
-  await prisma.organizer.create({
+  const org = await prisma.organizer.create({
     data: { name: parsed.data.name, slug, description: parsed.data.description },
   });
+
+  const cover_url = await extractCover("organizers", org.id, formData);
+  if (cover_url) await prisma.organizer.update({ where: { id: org.id }, data: { cover_url } });
 
   revalidatePath("/desafios");
   redirect("/desafios");
@@ -85,6 +95,9 @@ export async function createSeries(state: SeriesState, formData: FormData): Prom
     },
     include: { organizer: { select: { slug: true } } },
   });
+
+  const cover_url = await extractCover("series", series.id, formData);
+  if (cover_url) await prisma.series.update({ where: { id: series.id }, data: { cover_url } });
 
   if (series.organizer) {
     revalidatePath(`/desafios/org/${series.organizer.slug}`);
@@ -136,7 +149,7 @@ export async function createChallenge(
     organizer_id = series?.organizer_id ?? null;
   }
 
-  await prisma.challenge.create({
+  const challenge = await prisma.challenge.create({
     data: {
       name: parsed.data.name,
       description: parsed.data.description,
@@ -145,6 +158,9 @@ export async function createChallenge(
       organizer_id,
     },
   });
+
+  const cover_url = await extractCover("challenges", challenge.id, formData);
+  if (cover_url) await prisma.challenge.update({ where: { id: challenge.id }, data: { cover_url } });
 
   if (seriesId) {
     revalidatePath(`/desafios/serie/${seriesId}`);
@@ -176,10 +192,14 @@ export async function updateOrganizer(
   });
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
-  await prisma.organizer.update({
+  const org = await prisma.organizer.update({
     where: { slug },
     data: { name: parsed.data.name, description: parsed.data.description ?? null },
+    select: { id: true },
   });
+
+  const cover_url = await extractCover("organizers", org.id, formData);
+  if (cover_url) await prisma.organizer.update({ where: { id: org.id }, data: { cover_url } });
 
   revalidatePath(`/desafios/org/${slug}`);
   revalidatePath("/desafios");
@@ -214,6 +234,9 @@ export async function updateSeries(
     include: { organizer: { select: { slug: true } } },
   });
 
+  const cover_url = await extractCover("series", id, formData);
+  if (cover_url) await prisma.series.update({ where: { id }, data: { cover_url } });
+
   revalidatePath(`/desafios/serie/${id}`);
   if (series.organizer) revalidatePath(`/desafios/org/${series.organizer.slug}`);
   redirect(`/desafios/serie/${id}`);
@@ -244,6 +267,9 @@ export async function updateChallenge(
     },
   });
 
+  const cover_url = await extractCover("challenges", id, formData);
+  if (cover_url) await prisma.challenge.update({ where: { id }, data: { cover_url } });
+
   revalidatePath(`/desafios/${id}`);
   redirect(`/desafios/${id}`);
 }
@@ -267,7 +293,7 @@ export async function createOrgChallenge(
   const org = await prisma.organizer.findUnique({ where: { slug: orgSlug } });
   if (!org) return { message: "Organização não encontrada." };
 
-  await prisma.challenge.create({
+  const challenge = await prisma.challenge.create({
     data: {
       name: parsed.data.name,
       description: parsed.data.description,
@@ -276,6 +302,9 @@ export async function createOrgChallenge(
       series_id: null,
     },
   });
+
+  const cover_url = await extractCover("challenges", challenge.id, formData);
+  if (cover_url) await prisma.challenge.update({ where: { id: challenge.id }, data: { cover_url } });
 
   revalidatePath(`/desafios/org/${orgSlug}`);
   redirect(`/desafios/org/${orgSlug}`);

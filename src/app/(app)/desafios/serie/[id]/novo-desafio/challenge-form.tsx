@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { createChallenge } from "@/app/actions/challenges";
-import { DarkField, DarkInput, DarkTextarea, DarkSelect, DarkSubmit, FormError } from "@/components/ui/dark-form";
+import { DarkField, DarkInput, DarkTextarea, DarkSelect, DarkSubmit, FormError, DarkCoverPicker } from "@/components/ui/dark-form";
 
 const STATES = [
   "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT",
@@ -17,6 +17,7 @@ export function ChallengeForm({ seriesId }: Props) {
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="series_id" value={seriesId} />
+      <DarkCoverPicker />
 
       <DarkField label="Nome *" error={state?.errors?.name?.[0]}>
         <DarkInput name="name" placeholder="Ex: Estrada Real" />
