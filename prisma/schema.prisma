@@ -41,6 +41,11 @@ enum NotificationType {
   CHECKIN_REJECTED
 }
 
+enum ModerationMode {
+  PUBLIC
+  PRIVATE
+}
+
 model User {
   id                String         @id @default(cuid())
   name              String
@@ -60,11 +65,12 @@ model User {
   followers         Follow[]       @relation("Following")
   piloto_links      PilotoGarupa[] @relation("Piloto")
   garupa_links      PilotoGarupa[] @relation("Garupa")
-  notifications     Notification[]
-  reactions         Reaction[]
-  comments          Comment[]
-  created_at        DateTime       @default(now())
-  updated_at        DateTime       @updatedAt
+  notifications        Notification[]
+  reactions            Reaction[]
+  comments             Comment[]
+  moderated_challenges ChallengeModerator[]
+  created_at           DateTime             @default(now())
+  updated_at           DateTime             @updatedAt
 }
 
 model Motorcycle {
@@ -135,19 +141,32 @@ model Series {
 }
 
 model Challenge {
-  id           String            @id @default(cuid())
-  organizer_id String?
-  organizer    Organizer?        @relation(fields: [organizer_id], references: [id])
-  series_id    String?
-  series       Series?           @relation(fields: [series_id], references: [id])
-  name         String
-  description  String?
-  state_code   String?
-  cover_url    String?
-  is_active    Boolean           @default(true)
-  targets      ChallengeTarget[] @relation("ChallengeTargets")
-  checkins     CheckIn[]
-  created_at   DateTime          @default(now())
+  id              String               @id @default(cuid())
+  organizer_id    String?
+  organizer       Organizer?           @relation(fields: [organizer_id], references: [id])
+  series_id       String?
+  series          Series?              @relation(fields: [series_id], references: [id])
+  name            String
+  description     String?
+  state_code      String?
+  cover_url       String?
+  is_active       Boolean              @default(true)
+  moderation_mode ModerationMode       @default(PUBLIC)
+  targets         ChallengeTarget[]    @relation("ChallengeTargets")
+  checkins        CheckIn[]
+  moderators      ChallengeModerator[]
+  created_at      DateTime             @default(now())
+}
+
+model ChallengeModerator {
+  id           String    @id @default(cuid())
+  challenge_id String
+  challenge    Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+  user_id      String
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  created_at   DateTime  @default(now())
+
+  @@unique([challenge_id, user_id])
 }
 
 model City {

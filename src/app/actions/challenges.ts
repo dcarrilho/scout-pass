@@ -123,7 +123,19 @@ const ChallengeSchema = z.object({
   description: z.string().optional(),
   state_code: z.string().optional(),
   series_id: z.string().optional(),
+  moderation_mode: z.enum(["PUBLIC", "PRIVATE"]).default("PUBLIC"),
 });
+
+async function syncModerators(challengeId: string, formData: FormData) {
+  const ids = formData.getAll("moderator_ids").map(String).filter(Boolean);
+  await prisma.challengeModerator.deleteMany({ where: { challenge_id: challengeId } });
+  if (ids.length > 0) {
+    await prisma.challengeModerator.createMany({
+      data: ids.map((user_id) => ({ challenge_id: challengeId, user_id })),
+      skipDuplicates: true,
+    });
+  }
+}
 
 type ChallengeState = { errors?: Record<string, string[]>; message?: string } | undefined;
 
@@ -138,6 +150,7 @@ export async function createChallenge(
     description: formData.get("description") || undefined,
     state_code: formData.get("state_code") || undefined,
     series_id: formData.get("series_id") || undefined,
+    moderation_mode: formData.get("moderation_mode") || "PUBLIC",
   });
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
@@ -156,11 +169,14 @@ export async function createChallenge(
       state_code: parsed.data.state_code,
       series_id: seriesId ?? null,
       organizer_id,
+      moderation_mode: parsed.data.moderation_mode,
     },
   });
 
   const cover_url = await extractCover("challenges", challenge.id, formData);
   if (cover_url) await prisma.challenge.update({ where: { id: challenge.id }, data: { cover_url } });
+
+  await syncModerators(challenge.id, formData);
 
   if (seriesId) {
     revalidatePath(`/desafios/serie/${seriesId}`);
@@ -255,6 +271,7 @@ export async function updateChallenge(
     name: formData.get("name"),
     description: formData.get("description") || undefined,
     state_code: formData.get("state_code") || undefined,
+    moderation_mode: formData.get("moderation_mode") || "PUBLIC",
   });
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
@@ -264,11 +281,14 @@ export async function updateChallenge(
       name: parsed.data.name,
       description: parsed.data.description ?? null,
       state_code: parsed.data.state_code ?? null,
+      moderation_mode: parsed.data.moderation_mode,
     },
   });
 
   const cover_url = await extractCover("challenges", id, formData);
   if (cover_url) await prisma.challenge.update({ where: { id }, data: { cover_url } });
+
+  await syncModerators(id, formData);
 
   revalidatePath(`/desafios/${id}`);
   redirect(`/desafios/${id}`);
@@ -287,6 +307,7 @@ export async function createOrgChallenge(
     name: formData.get("name"),
     description: formData.get("description") || undefined,
     state_code: formData.get("state_code") || undefined,
+    moderation_mode: formData.get("moderation_mode") || "PUBLIC",
   });
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
@@ -300,11 +321,14 @@ export async function createOrgChallenge(
       state_code: parsed.data.state_code,
       organizer_id: org.id,
       series_id: null,
+      moderation_mode: parsed.data.moderation_mode,
     },
   });
 
   const cover_url = await extractCover("challenges", challenge.id, formData);
   if (cover_url) await prisma.challenge.update({ where: { id: challenge.id }, data: { cover_url } });
+
+  await syncModerators(challenge.id, formData);
 
   revalidatePath(`/desafios/org/${orgSlug}`);
   redirect(`/desafios/org/${orgSlug}`);
