@@ -24,6 +24,8 @@ async function authorizeModeration(checkInId: string) {
   });
   if (!checkIn) redirect("/home");
 
+  if (checkIn.user_id === session.userId) redirect("/moderacao");
+
   if (checkIn.challenge.moderation_mode === "PRIVATE") {
     const allowed = checkIn.challenge.moderators.some((m) => m.user_id === session.userId);
     if (!allowed) redirect("/home");

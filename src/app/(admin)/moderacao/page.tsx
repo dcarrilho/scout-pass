@@ -126,26 +126,35 @@ export default async function ModeracaoPage() {
                 </p>
               )}
 
-              <div className="grid grid-cols-2 gap-2">
-                <form action={approveCheckIn.bind(null, checkin.id)}>
-                  <button
-                    type="submit"
-                    className="w-full rounded-xl py-2.5 text-sm font-bold transition-colors"
-                    style={{ background: "rgba(22,163,74,0.15)", color: "#16a34a", border: "1px solid rgba(22,163,74,0.3)" }}
-                  >
-                    ✓ Aprovar
-                  </button>
-                </form>
-                <Link href={`/moderacao/${checkin.id}`} className="block">
-                  <button
-                    type="button"
-                    className="w-full rounded-xl py-2.5 text-sm font-bold transition-colors"
-                    style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)" }}
-                  >
-                    ✕ Reprovar
-                  </button>
-                </Link>
-              </div>
+              {checkin.user_id === userId ? (
+                <div
+                  className="rounded-xl py-2.5 text-center text-xs font-medium"
+                  style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.3)", border: "1px solid rgba(255,255,255,0.08)" }}
+                >
+                  Você não pode moderar seu próprio check-in
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <form action={approveCheckIn.bind(null, checkin.id)}>
+                    <button
+                      type="submit"
+                      className="w-full rounded-xl py-2.5 text-sm font-bold transition-colors"
+                      style={{ background: "rgba(22,163,74,0.15)", color: "#16a34a", border: "1px solid rgba(22,163,74,0.3)" }}
+                    >
+                      ✓ Aprovar
+                    </button>
+                  </form>
+                  <Link href={`/moderacao/${checkin.id}`} className="block">
+                    <button
+                      type="button"
+                      className="w-full rounded-xl py-2.5 text-sm font-bold transition-colors"
+                      style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)" }}
+                    >
+                      ✕ Reprovar
+                    </button>
+                  </Link>
+                </div>
+              )}
             </div>
           </article>
         ))}
