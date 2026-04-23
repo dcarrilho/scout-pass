@@ -6,6 +6,7 @@ import Image from "next/image";
 import { toggleReaction, addComment, deleteComment } from "@/app/actions/feed";
 import { Button } from "@/components/ui/button";
 import RelativeTime from "./relative-time";
+import PhotoCarousel from "@/components/moderation/photo-carousel";
 
 const MAX_COLLAPSED = 2;
 
@@ -72,25 +73,11 @@ export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; cur
       </div>
 
       {/* Foto(s) */}
-      {(() => {
-        const coverUrl = checkin.photos[0]?.url ?? checkin.photo_url;
-        const count = checkin.photos.length;
-        if (!coverUrl) return null;
-        return (
-          <div className="relative">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={coverUrl} alt="Check-in" className="w-full aspect-[4/3] object-cover" />
-            {count > 1 && (
-              <span
-                className="absolute top-2 right-2 text-xs font-bold rounded-full px-2 py-0.5 flex items-center gap-1"
-                style={{ background: "rgba(0,0,0,0.6)", color: "white" }}
-              >
-                📷 {count}
-              </span>
-            )}
-          </div>
-        );
-      })()}
+      <PhotoCarousel
+        photos={checkin.photos}
+        fallbackUrl={checkin.photo_url}
+        aspectClass="aspect-[4/3]"
+      />
 
       {/* Ações */}
       <div className="px-4 pt-2 pb-1 flex items-center gap-3">

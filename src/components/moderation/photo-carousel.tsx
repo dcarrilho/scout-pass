@@ -6,9 +6,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 type Props = {
   photos: { url: string; order: number }[];
   fallbackUrl?: string | null;
+  aspectClass?: string;
 };
 
-export default function PhotoCarousel({ photos, fallbackUrl }: Props) {
+export default function PhotoCarousel({ photos, fallbackUrl, aspectClass = "aspect-video" }: Props) {
   const urls = photos.length > 0 ? photos.map((p) => p.url) : fallbackUrl ? [fallbackUrl] : [];
   const [current, setCurrent] = useState(0);
   const touchStartX = useRef<number | null>(null);
@@ -35,7 +36,7 @@ export default function PhotoCarousel({ photos, fallbackUrl }: Props) {
     <div>
       {/* Main photo */}
       <div
-        className="relative w-full aspect-video bg-black/40 select-none overflow-hidden"
+        className={`relative w-full ${aspectClass} bg-black/40 select-none overflow-hidden`}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
