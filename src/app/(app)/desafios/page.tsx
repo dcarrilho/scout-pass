@@ -103,22 +103,13 @@ export default async function DesafiosPage({ searchParams }: { searchParams: Sea
         <div className="px-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-white">Desafios</h1>
           {(session.role === "MODERATOR" || session.role === "ADMIN") && (
-            <div className="flex items-center gap-2">
-              <Link
-                href="/moderacao"
-                className="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
-                style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.1)" }}
-              >
-                🛡️ Moderação
-              </Link>
-              <Link
-                href="/desafios/nova-organizacao"
-                className="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
-                style={{ background: "rgba(249,115,22,0.15)", color: "#f97316", border: "1px solid rgba(249,115,22,0.3)" }}
-              >
-                + Organização
-              </Link>
-            </div>
+            <Link
+              href="/desafios/nova-organizacao"
+              className="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+              style={{ background: "rgba(249,115,22,0.15)", color: "#f97316", border: "1px solid rgba(249,115,22,0.3)" }}
+            >
+              + Organização
+            </Link>
           )}
         </div>
 
