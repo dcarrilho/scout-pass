@@ -6,7 +6,7 @@ import BottomNav from "@/components/layout/bottom-nav";
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await verifySession();
 
-  const [user, pendingCount] = await Promise.all([
+  const [user, pendingCount, assignedChallenges] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.userId },
       select: { username: true, role: true, name: true, avatar_url: true },
@@ -14,9 +14,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     prisma.follow.count({
       where: { following_id: session.userId, status: "PENDING" },
     }),
+    prisma.challengeModerator.count({
+      where: { user_id: session.userId },
+    }),
   ]);
 
-  const isModerator = user?.role === "MODERATOR" || user?.role === "ADMIN";
+  const isModerator =
+    user?.role === "MODERATOR" || user?.role === "ADMIN" || assignedChallenges > 0;
 
   return (
     <div className="min-h-screen pb-20">
