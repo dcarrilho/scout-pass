@@ -1,84 +1,88 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useState, useTransition, useRef } from "react";
 import { submitCheckIn } from "@/app/actions/checkin";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 const MAX_PHOTOS = 5;
 
+function isNextRedirect(e: unknown): boolean {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    "digest" in e &&
+    typeof (e as { digest: unknown }).digest === "string" &&
+    (e as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  );
+}
+
 type Motorcycle = { id: string; brand: string; model: string; year: number; is_active: boolean };
 type Props = { challengeId: string; targetId: string; motorcycles: Motorcycle[] };
 
 export default function CheckInForm({ challengeId, targetId, motorcycles }: Props) {
-  const [state, formAction, isPending] = useActionState(submitCheckIn, undefined);
-  const [files, setFiles] = useState<File[]>([]);
+  const [error, setError] = useState<string | undefined>(undefined);
+  const [isPending, startTransition] = useTransition();
+  // ref stores files without stale-closure risk
+  const filesRef = useRef<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  // pickerRef: opens the OS file dialog
   const pickerRef = useRef<HTMLInputElement>(null);
-  // submitRef: hidden input named "photos" that is kept in sync via DataTransfer
-  //            and gets submitted with the form naturally
-  const submitRef = useRef<HTMLInputElement>(null);
-
-  const syncSubmitInput = (allFiles: File[]) => {
-    if (!submitRef.current) return;
-    const dt = new DataTransfer();
-    allFiles.forEach((f) => dt.items.add(f));
-    submitRef.current.files = dt.files;
-  };
+  const motoRef = useRef<HTMLSelectElement>(null);
 
   const addFiles = (incoming: FileList | null) => {
     if (!incoming) return;
-    setFiles((prev) => {
-      const slots = MAX_PHOTOS - prev.length;
-      if (slots <= 0) return prev;
-      const accepted = Array.from(incoming).slice(0, slots);
-      const combined = [...prev, ...accepted];
-      syncSubmitInput(combined);
-      const newUrls = accepted.map((f) => URL.createObjectURL(f));
-      setPreviews((p) => [...p, ...newUrls]);
-      return combined;
-    });
+    const slots = MAX_PHOTOS - filesRef.current.length;
+    if (slots <= 0) return;
+    const accepted = Array.from(incoming).slice(0, slots);
+    filesRef.current = [...filesRef.current, ...accepted];
+    setPreviews((p) => [...p, ...accepted.map((f) => URL.createObjectURL(f))]);
+    // reset picker so same file can be re-selected and onChange fires again
     if (pickerRef.current) pickerRef.current.value = "";
   };
 
   const removePhoto = (index: number) => {
-    setFiles((prev) => {
-      const updated = prev.filter((_, i) => i !== index);
-      syncSubmitInput(updated);
-      return updated;
-    });
+    filesRef.current = filesRef.current.filter((_, i) => i !== index);
     setPreviews((prev) => {
       URL.revokeObjectURL(prev[index]);
       return prev.filter((_, i) => i !== index);
     });
   };
 
-  return (
-    <form action={formAction} className="space-y-5">
-      <input type="hidden" name="challenge_id" value={challengeId} />
-      <input type="hidden" name="target_id" value={targetId} />
-      {/* Hidden input submitted with the form — kept in sync via DataTransfer */}
-      <input ref={submitRef} name="photos" type="file" accept="image/*" multiple className="hidden" />
-      {/* Picker input — only triggers OS dialog, not submitted */}
-      <input
-        ref={pickerRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => addFiles(e.target.files)}
-      />
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(undefined);
 
+    const fd = new FormData();
+    fd.set("challenge_id", challengeId);
+    fd.set("target_id", targetId);
+    if (motoRef.current?.value) fd.set("motorcycle_id", motoRef.current.value);
+    filesRef.current.forEach((f) => fd.append("photos", f));
+
+    startTransition(async () => {
+      try {
+        const result = await submitCheckIn(undefined, fd);
+        if (result?.error) setError(result.error);
+      } catch (e) {
+        // redirect() throws NEXT_REDIRECT — re-throw so Next.js handles navigation
+        if (isNextRedirect(e)) throw e;
+        setError("Erro inesperado. Tente novamente.");
+      }
+    });
+  };
+
+  const photoCount = previews.length;
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label>Fotos *</Label>
           <span className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
-            {files.length}/{MAX_PHOTOS}
+            {photoCount}/{MAX_PHOTOS}
           </span>
         </div>
 
-        {previews.length > 0 ? (
+        {photoCount > 0 ? (
           <div className="grid grid-cols-3 gap-2">
             {previews.map((url, i) => (
               <div
@@ -106,7 +110,7 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
                 )}
               </div>
             ))}
-            {files.length < MAX_PHOTOS && (
+            {photoCount < MAX_PHOTOS && (
               <button
                 type="button"
                 onClick={() => pickerRef.current?.click()}
@@ -141,12 +145,22 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
             </p>
           </div>
         )}
+
+        <input
+          ref={pickerRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => addFiles(e.target.files)}
+        />
       </div>
 
       {motorcycles.length > 0 && (
         <div className="space-y-2">
           <Label htmlFor="motorcycle_id">Moto utilizada</Label>
           <select
+            ref={motoRef}
             id="motorcycle_id"
             name="motorcycle_id"
             className="w-full border rounded-md px-3 py-2 text-sm bg-background"
@@ -162,13 +176,13 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
         </div>
       )}
 
-      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <Button
         type="submit"
         className="w-full"
-        disabled={isPending || files.length === 0}
-        style={files.length === 0 ? { opacity: 0.5 } : {}}
+        disabled={isPending || photoCount === 0}
+        style={photoCount === 0 ? { opacity: 0.5 } : {}}
       >
         {isPending ? "Enviando..." : "Enviar check-in"}
       </Button>
