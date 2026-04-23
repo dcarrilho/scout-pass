@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, Shield } from "lucide-react";
-import { verifyModerator } from "@/lib/dal";
+import { verifyCanModerate } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { approveCheckIn } from "@/app/actions/moderation";
 
@@ -14,10 +14,18 @@ function timeAgo(date: Date) {
 }
 
 export default async function ModeracaoPage() {
-  await verifyModerator();
+  const { userId, isGlobalModerator } = await verifyCanModerate();
 
   const pending = await prisma.checkIn.findMany({
-    where: { status: "PENDING" },
+    where: isGlobalModerator
+      ? { status: "PENDING" }
+      : {
+          status: "PENDING",
+          challenge: {
+            moderation_mode: "PRIVATE",
+            moderators: { some: { user_id: userId } },
+          },
+        },
     include: {
       user: { select: { name: true, username: true, avatar_url: true } },
       challenge: { select: { name: true } },

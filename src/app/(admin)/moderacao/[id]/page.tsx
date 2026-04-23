@@ -2,14 +2,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
-import { verifyModerator } from "@/lib/dal";
+import { verifyCanModerate } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import RejectForm from "./reject-form";
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function RejectPage({ params }: Props) {
-  await verifyModerator();
+  await verifyCanModerate();
   const { id } = await params;
 
   const checkin = await prisma.checkIn.findUnique({

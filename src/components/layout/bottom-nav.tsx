@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Map, Trophy, User } from "lucide-react";
+import { Home, Map, Trophy, User, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -10,13 +10,14 @@ type Props = {
   isModerator: boolean;
 };
 
-export default function BottomNav({ username, isModerator: _isModerator }: Props) {
+export default function BottomNav({ username, isModerator }: Props) {
   const pathname = usePathname();
 
   const links = [
     { href: "/home", label: "Feed", icon: Home },
     { href: "/desafios", label: "Desafios", icon: Trophy },
     { href: "/mapa", label: "Mapa", icon: Map },
+    ...(isModerator ? [{ href: "/moderacao", label: "Moderação", icon: Shield }] : []),
     { href: `/perfil/${username}`, label: "Perfil", icon: User },
   ];
 

@@ -14,44 +14,62 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
   const [state, formAction, isPending] = useActionState(submitCheckIn, undefined);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  const fileRef = useRef<HTMLInputElement>(null);
+  // pickerRef: opens the OS file dialog
+  const pickerRef = useRef<HTMLInputElement>(null);
+  // submitRef: hidden input named "photos" that is kept in sync via DataTransfer
+  //            and gets submitted with the form naturally
+  const submitRef = useRef<HTMLInputElement>(null);
+
+  const syncSubmitInput = (allFiles: File[]) => {
+    if (!submitRef.current) return;
+    const dt = new DataTransfer();
+    allFiles.forEach((f) => dt.items.add(f));
+    submitRef.current.files = dt.files;
+  };
 
   const addFiles = (incoming: FileList | null) => {
     if (!incoming) return;
-    const toAdd = Array.from(incoming);
     setFiles((prev) => {
       const slots = MAX_PHOTOS - prev.length;
       if (slots <= 0) return prev;
-      const accepted = toAdd.slice(0, slots);
+      const accepted = Array.from(incoming).slice(0, slots);
+      const combined = [...prev, ...accepted];
+      syncSubmitInput(combined);
       const newUrls = accepted.map((f) => URL.createObjectURL(f));
       setPreviews((p) => [...p, ...newUrls]);
-      return [...prev, ...accepted];
+      return combined;
     });
-    // reset so the same file can be re-selected if needed
-    if (fileRef.current) fileRef.current.value = "";
+    if (pickerRef.current) pickerRef.current.value = "";
   };
 
   const removePhoto = (index: number) => {
+    setFiles((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      syncSubmitInput(updated);
+      return updated;
+    });
     setPreviews((prev) => {
       URL.revokeObjectURL(prev[index]);
       return prev.filter((_, i) => i !== index);
     });
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const fd = new FormData();
-    fd.set("challenge_id", challengeId);
-    fd.set("target_id", targetId);
-    const motoSelect = e.currentTarget.querySelector<HTMLSelectElement>('[name="motorcycle_id"]');
-    if (motoSelect?.value) fd.set("motorcycle_id", motoSelect.value);
-    files.forEach((f) => fd.append("photos", f));
-    formAction(fd);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form action={formAction} className="space-y-5">
+      <input type="hidden" name="challenge_id" value={challengeId} />
+      <input type="hidden" name="target_id" value={targetId} />
+      {/* Hidden input submitted with the form — kept in sync via DataTransfer */}
+      <input ref={submitRef} name="photos" type="file" accept="image/*" multiple className="hidden" />
+      {/* Picker input — only triggers OS dialog, not submitted */}
+      <input
+        ref={pickerRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => addFiles(e.target.files)}
+      />
+
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label>Fotos *</Label>
@@ -91,7 +109,7 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
             {files.length < MAX_PHOTOS && (
               <button
                 type="button"
-                onClick={() => fileRef.current?.click()}
+                onClick={() => pickerRef.current?.click()}
                 className="aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-colors"
                 style={{
                   background: "rgba(255,255,255,0.04)",
@@ -112,7 +130,7 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
               background: "rgba(255,255,255,0.04)",
               border: "2px dashed rgba(255,255,255,0.15)",
             }}
-            onClick={() => fileRef.current?.click()}
+            onClick={() => pickerRef.current?.click()}
           >
             <p className="text-2xl mb-2">📷</p>
             <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
@@ -123,15 +141,6 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
             </p>
           </div>
         )}
-
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => addFiles(e.target.files)}
-        />
       </div>
 
       {motorcycles.length > 0 && (

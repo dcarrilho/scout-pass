@@ -7,7 +7,7 @@ import InstallPrompt from "@/components/pwa/install-prompt";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await verifySession();
 
-  const [user, pendingFollows, pendingGarupa, unreadNotifications] = await Promise.all([
+  const [user, pendingFollows, pendingGarupa, unreadNotifications, assignedChallenges] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.userId },
       select: { username: true, role: true, name: true, avatar_url: true },
@@ -21,11 +21,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     prisma.notification.count({
       where: { user_id: session.userId, read: false },
     }),
+    prisma.challengeModerator.count({
+      where: { user_id: session.userId },
+    }),
   ]);
 
   const pendingCount = pendingFollows + pendingGarupa + unreadNotifications;
 
-  const isModerator = user?.role === "MODERATOR" || user?.role === "ADMIN";
+  const isModerator =
+    user?.role === "MODERATOR" || user?.role === "ADMIN" || assignedChallenges > 0;
 
   return (
     <div className="min-h-screen pb-20">
