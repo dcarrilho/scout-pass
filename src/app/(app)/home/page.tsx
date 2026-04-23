@@ -38,6 +38,7 @@ export default async function HomePage({
         include: { user: { select: { id: true, name: true, username: true, avatar_url: true } } },
         orderBy: { created_at: "asc" },
       },
+      photos: { select: { url: true, order: true }, orderBy: { order: "asc" } },
     },
     orderBy: { reviewed_at: "desc" },
     take: take + 1,

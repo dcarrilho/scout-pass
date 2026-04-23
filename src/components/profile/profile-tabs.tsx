@@ -21,9 +21,10 @@ type Motorcycle = {
 
 type RecentCheckIn = {
   id: string;
-  photo_url: string;
+  photo_url: string | null;
   target: { name: string };
   challenge: { name: string };
+  photos: { url: string; order: number }[];
 };
 
 type Props = {
@@ -145,7 +146,7 @@ export function ProfileTabs(props: Props) {
               {recentCheckIns.map((ci) => (
                 <div key={ci.id} className="relative aspect-square overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={ci.photo_url} alt={ci.target.name} className="w-full h-full object-cover" />
+                  <img src={ci.photos[0]?.url ?? ci.photo_url ?? ""} alt={ci.target.name} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 flex items-end p-1.5" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.65), transparent)" }}>
                     <p className="text-[10px] text-white font-medium leading-tight line-clamp-1">{ci.target.name}</p>
                   </div>

@@ -19,6 +19,7 @@ export default async function RejectPage({ params }: Props) {
       challenge: { select: { name: true } },
       target: { select: { name: true } },
       motorcycle: { select: { brand: true, model: true, year: true } },
+      photos: { select: { url: true, order: true }, orderBy: { order: "asc" } },
     },
   });
 
@@ -46,9 +47,9 @@ export default async function RejectPage({ params }: Props) {
           className="rounded-2xl overflow-hidden"
           style={{ background: "#161412", border: "1px solid rgba(255,255,255,0.08)" }}
         >
-          {/* Photo */}
+          {/* Photo(s) */}
           <div className="relative w-full aspect-video bg-black/40">
-            <Image src={checkin.photo_url} alt="Check-in" fill className="object-cover" />
+            <Image src={checkin.photos[0]?.url ?? checkin.photo_url ?? ""} alt="Check-in" fill className="object-cover" />
             <div
               className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-10"
               style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)" }}
@@ -57,6 +58,15 @@ export default async function RejectPage({ params }: Props) {
               <p className="text-xs text-white/50 mt-0.5">{checkin.challenge.name}</p>
             </div>
           </div>
+          {checkin.photos.length > 1 && (
+            <div className="flex gap-1.5 px-3 py-2 overflow-x-auto" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              {checkin.photos.map((photo, i) => (
+                <div key={photo.order} className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0">
+                  <Image src={photo.url} alt={`Foto ${i + 1}`} fill className="object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* User info */}
           <div className="px-4 py-3 flex items-center gap-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>

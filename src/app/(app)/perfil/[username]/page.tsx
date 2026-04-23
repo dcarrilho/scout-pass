@@ -50,6 +50,7 @@ export default async function PerfilPage({ params }: Props) {
         include: {
           target: { select: { name: true } },
           challenge: { select: { name: true } },
+          photos: { select: { url: true, order: true }, orderBy: { order: "asc" }, take: 1 },
         },
         orderBy: { reviewed_at: "desc" },
         take: 9,

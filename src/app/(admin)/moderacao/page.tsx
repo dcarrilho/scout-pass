@@ -23,6 +23,7 @@ export default async function ModeracaoPage() {
       challenge: { select: { name: true } },
       target: { select: { name: true } },
       motorcycle: { select: { brand: true, model: true, year: true } },
+      photos: { select: { url: true, order: true }, orderBy: { order: "asc" } },
     },
     orderBy: { submitted_at: "asc" },
   });
@@ -70,7 +71,15 @@ export default async function ModeracaoPage() {
           >
             {/* Photo with user overlay */}
             <div className="relative w-full aspect-video bg-black/40">
-              <Image src={checkin.photo_url} alt="Check-in" fill className="object-cover" />
+              <Image src={checkin.photos[0]?.url ?? checkin.photo_url ?? ""} alt="Check-in" fill className="object-cover" />
+              {checkin.photos.length > 1 && (
+                <span
+                  className="absolute top-2 left-2 text-xs font-bold rounded-full px-2 py-0.5"
+                  style={{ background: "rgba(0,0,0,0.6)", color: "white" }}
+                >
+                  📷 {checkin.photos.length}
+                </span>
+              )}
 
               {/* Top gradient overlay with user info */}
               <div

@@ -11,9 +11,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-async function uploadCheckInPhoto(checkInId: string, file: File): Promise<string> {
+async function uploadCheckInPhoto(checkInId: string, file: File, order: number): Promise<string> {
   const ext = file.name.split(".").pop();
-  const path = `checkins/${checkInId}.${ext}`;
+  const path = `checkins/${checkInId}/${order}.${ext}`;
   const { error } = await supabase.storage
     .from("scoutpass")
     .upload(path, file, { upsert: true, contentType: file.type });
@@ -31,11 +31,15 @@ export async function submitCheckIn(
   const challengeId = formData.get("challenge_id") as string;
   const targetId = formData.get("target_id") as string;
   const motorcycleId = formData.get("motorcycle_id") as string | null;
-  const photo = formData.get("photo") as File | null;
+  const photoFiles = formData.getAll("photos") as File[];
+  const validPhotos = photoFiles.filter((f) => f && f.size > 0);
 
   if (!challengeId || !targetId) return { error: "Dados inválidos." };
-  if (!photo || photo.size === 0) return { error: "A foto é obrigatória." };
-  if (photo.size > 10 * 1024 * 1024) return { error: "Foto deve ter no máximo 10MB." };
+  if (validPhotos.length === 0) return { error: "Ao menos uma foto é obrigatória." };
+  if (validPhotos.length > 5) return { error: "Máximo de 5 fotos permitidas." };
+  for (const photo of validPhotos) {
+    if (photo.size > 10 * 1024 * 1024) return { error: "Cada foto deve ter no máximo 10MB." };
+  }
 
   const participant = await prisma.challengeParticipant.findUnique({
     where: { challenge_id_user_id: { challenge_id: challengeId, user_id: session.userId } },
@@ -63,14 +67,23 @@ export async function submitCheckIn(
   });
 
   try {
-    const photoUrl = await uploadCheckInPhoto(checkIn.id, photo);
+    const urls: string[] = [];
+    for (let i = 0; i < validPhotos.length; i++) {
+      const url = await uploadCheckInPhoto(checkIn.id, validPhotos[i], i);
+      urls.push(url);
+    }
+
     await prisma.checkIn.update({
       where: { id: checkIn.id },
-      data: { photo_url: photoUrl },
+      data: { photo_url: urls[0] },
+    });
+
+    await prisma.checkInPhoto.createMany({
+      data: urls.map((url, order) => ({ checkin_id: checkIn.id, url, order })),
     });
   } catch {
     await prisma.checkIn.delete({ where: { id: checkIn.id } });
-    return { error: "Erro ao enviar foto. Tente novamente." };
+    return { error: "Erro ao enviar fotos. Tente novamente." };
   }
 
   const challengeInfo = await prisma.challenge.findUnique({

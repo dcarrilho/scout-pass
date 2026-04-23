@@ -11,7 +11,7 @@ const MAX_COLLAPSED = 2;
 
 export type FeedCheckin = {
   id: string;
-  photo_url: string;
+  photo_url: string | null;
   reviewed_at: Date | null;
   user: { name: string; username: string; avatar_url: string | null };
   challenge: { name: string };
@@ -23,6 +23,7 @@ export type FeedCheckin = {
     created_at: Date;
     user: { id: string; name: string; username: string; avatar_url: string | null };
   }[];
+  photos: { url: string; order: number }[];
 };
 
 export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; currentUserId: string }) {
@@ -70,9 +71,26 @@ export function FeedCard({ checkin, currentUserId }: { checkin: FeedCheckin; cur
         <RelativeTime date={checkin.reviewed_at} />
       </div>
 
-      {/* Foto */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={checkin.photo_url} alt="Check-in" className="w-full aspect-[4/3] object-cover" />
+      {/* Foto(s) */}
+      {(() => {
+        const coverUrl = checkin.photos[0]?.url ?? checkin.photo_url;
+        const count = checkin.photos.length;
+        if (!coverUrl) return null;
+        return (
+          <div className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverUrl} alt="Check-in" className="w-full aspect-[4/3] object-cover" />
+            {count > 1 && (
+              <span
+                className="absolute top-2 right-2 text-xs font-bold rounded-full px-2 py-0.5 flex items-center gap-1"
+                style={{ background: "rgba(0,0,0,0.6)", color: "white" }}
+              >
+                📷 {count}
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Ações */}
       <div className="px-4 pt-2 pb-1 flex items-center gap-3">

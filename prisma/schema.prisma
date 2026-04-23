@@ -230,7 +230,7 @@ model CheckIn {
   target           ChallengeTarget @relation(fields: [target_id], references: [id])
   motorcycle_id    String?
   motorcycle       Motorcycle?     @relation(fields: [motorcycle_id], references: [id])
-  photo_url        String
+  photo_url        String?
   exif_latitude    Float?
   exif_longitude   Float?
   exif_taken_at    DateTime?
@@ -244,6 +244,16 @@ model CheckIn {
   notifications    Notification[]
   reactions        Reaction[]
   comments         Comment[]
+  photos           CheckInPhoto[]
+}
+
+model CheckInPhoto {
+  id         String   @id @default(cuid())
+  checkin_id String
+  checkin    CheckIn  @relation(fields: [checkin_id], references: [id], onDelete: Cascade)
+  url        String
+  order      Int      @default(0)
+  created_at DateTime @default(now())
 }
 
 model Reaction {
