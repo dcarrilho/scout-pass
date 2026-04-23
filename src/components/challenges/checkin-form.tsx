@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useTransition, useRef, useState } from "react";
 import { submitCheckIn } from "@/app/actions/checkin";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,49 +11,68 @@ type Motorcycle = { id: string; brand: string; model: string; year: number; is_a
 type Props = { challengeId: string; targetId: string; motorcycles: Motorcycle[] };
 
 export default function CheckInForm({ challengeId, targetId, motorcycles }: Props) {
-  const [state, action, pending] = useActionState(submitCheckIn, undefined);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [state, setState] = useState<{ error?: string } | undefined>(undefined);
+  const [isPending, startTransition] = useTransition();
+  const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files) return;
-    const selected = Array.from(files).slice(0, MAX_PHOTOS);
-    const urls = selected.map((f) => URL.createObjectURL(f));
-    setPreviews(urls);
+  const addFiles = (incoming: FileList | null) => {
+    if (!incoming) return;
+    const toAdd = Array.from(incoming);
+    setFiles((prev) => {
+      const slots = MAX_PHOTOS - prev.length;
+      if (slots <= 0) return prev;
+      const accepted = toAdd.slice(0, slots);
+      const newUrls = accepted.map((f) => URL.createObjectURL(f));
+      setPreviews((p) => [...p, ...newUrls]);
+      return [...prev, ...accepted];
+    });
+    // reset so the same file can be re-selected if needed
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const removePhoto = (index: number) => {
-    const dt = new DataTransfer();
-    const current = fileRef.current?.files;
-    if (current) {
-      Array.from(current).forEach((f, i) => {
-        if (i !== index) dt.items.add(f);
-      });
-      if (fileRef.current) fileRef.current.files = dt.files;
-    }
     setPreviews((prev) => {
       URL.revokeObjectURL(prev[index]);
       return prev.filter((_, i) => i !== index);
     });
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.set("challenge_id", challengeId);
+    fd.set("target_id", targetId);
+    const motoSelect = e.currentTarget.querySelector<HTMLSelectElement>('[name="motorcycle_id"]');
+    if (motoSelect?.value) fd.set("motorcycle_id", motoSelect.value);
+    files.forEach((f) => fd.append("photos", f));
+
+    startTransition(async () => {
+      const result = await submitCheckIn(undefined, fd);
+      if (result) setState(result);
+    });
   };
 
   return (
-    <form action={action} className="space-y-5">
-      <input type="hidden" name="challenge_id" value={challengeId} />
-      <input type="hidden" name="target_id" value={targetId} />
-
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label>Fotos *</Label>
           <span className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
-            {previews.length}/{MAX_PHOTOS}
+            {files.length}/{MAX_PHOTOS}
           </span>
         </div>
 
-        {previews.length > 0 && (
+        {previews.length > 0 ? (
           <div className="grid grid-cols-3 gap-2">
             {previews.map((url, i) => (
-              <div key={url} className="relative aspect-square rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+              <div
+                key={url}
+                className="relative aspect-square rounded-xl overflow-hidden"
+                style={{ background: "rgba(255,255,255,0.06)" }}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="" className="w-full h-full object-cover" />
                 <button
@@ -74,24 +93,30 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
                 )}
               </div>
             ))}
-            {previews.length < MAX_PHOTOS && (
+            {files.length < MAX_PHOTOS && (
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
                 className="aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-colors"
-                style={{ background: "rgba(255,255,255,0.04)", border: "2px dashed rgba(255,255,255,0.15)" }}
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "2px dashed rgba(255,255,255,0.15)",
+                }}
               >
                 <span className="text-xl" style={{ color: "rgba(255,255,255,0.3)" }}>+</span>
-                <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>Adicionar</span>
+                <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>
+                  Adicionar
+                </span>
               </button>
             )}
           </div>
-        )}
-
-        {previews.length === 0 && (
+        ) : (
           <div
             className="rounded-xl p-8 text-center cursor-pointer transition-colors"
-            style={{ background: "rgba(255,255,255,0.04)", border: "2px dashed rgba(255,255,255,0.15)" }}
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "2px dashed rgba(255,255,255,0.15)",
+            }}
             onClick={() => fileRef.current?.click()}
           >
             <p className="text-2xl mb-2">📷</p>
@@ -106,12 +131,11 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
 
         <input
           ref={fileRef}
-          name="photos"
           type="file"
           accept="image/*"
           multiple
           className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => addFiles(e.target.files)}
         />
       </div>
 
@@ -126,7 +150,8 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
             <option value="">Não informar</option>
             {motorcycles.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.brand} {m.model} {m.year}{m.is_active ? " (ativa)" : ""}
+                {m.brand} {m.model} {m.year}
+                {m.is_active ? " (ativa)" : ""}
               </option>
             ))}
           </select>
@@ -138,10 +163,10 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
       <Button
         type="submit"
         className="w-full"
-        disabled={pending || previews.length === 0}
-        style={previews.length === 0 ? { opacity: 0.5 } : {}}
+        disabled={isPending || files.length === 0}
+        style={files.length === 0 ? { opacity: 0.5 } : {}}
       >
-        {pending ? "Enviando..." : "Enviar check-in"}
+        {isPending ? "Enviando..." : "Enviar check-in"}
       </Button>
     </form>
   );
