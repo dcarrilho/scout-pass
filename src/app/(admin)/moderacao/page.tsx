@@ -1,9 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 import { verifyCanModerate } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { approveCheckIn } from "@/app/actions/moderation";
+import PhotoCarousel from "@/components/moderation/photo-carousel";
 
 function timeAgo(date: Date) {
   const diff = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -77,45 +78,29 @@ export default async function ModeracaoPage() {
             className="rounded-2xl overflow-hidden"
             style={{ background: "#161412", border: "1px solid rgba(255,255,255,0.08)" }}
           >
-            {/* Photo with user overlay */}
-            <div className="relative w-full aspect-video bg-black/40">
-              <Image src={checkin.photos[0]?.url ?? checkin.photo_url ?? ""} alt="Check-in" fill className="object-cover" />
-              {checkin.photos.length > 1 && (
-                <span
-                  className="absolute top-2 left-2 text-xs font-bold rounded-full px-2 py-0.5"
-                  style={{ background: "rgba(0,0,0,0.6)", color: "white" }}
-                >
-                  📷 {checkin.photos.length}
-                </span>
-              )}
-
-              {/* Top gradient overlay with user info */}
-              <div
-                className="absolute inset-x-0 top-0 px-3 pt-3 pb-8 flex items-start gap-2.5"
-                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%)" }}
-              >
-                <div className="w-9 h-9 rounded-full bg-white/10 shrink-0 overflow-hidden border border-white/20 flex items-center justify-center">
-                  {checkin.user.avatar_url ? (
-                    <Image src={checkin.user.avatar_url} alt="" width={36} height={36} className="object-cover w-full h-full" />
-                  ) : (
-                    <span className="text-sm font-bold text-white">{checkin.user.name[0]?.toUpperCase()}</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white leading-tight">{checkin.user.name}</p>
-                  <p className="text-xs text-white/55">@{checkin.user.username}</p>
-                </div>
-                <span className="text-xs text-white/45 shrink-0 mt-0.5">{timeAgo(checkin.submitted_at)}</span>
+            {/* User info */}
+            <div className="px-3 pt-3 pb-2 flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-white/10 shrink-0 overflow-hidden border border-white/20 flex items-center justify-center">
+                {checkin.user.avatar_url ? (
+                  <Image src={checkin.user.avatar_url} alt="" width={36} height={36} className="object-cover w-full h-full" />
+                ) : (
+                  <span className="text-sm font-bold text-white">{checkin.user.name[0]?.toUpperCase()}</span>
+                )}
               </div>
-
-              {/* Bottom gradient with location info */}
-              <div
-                className="absolute inset-x-0 bottom-0 px-3 pb-3 pt-8"
-                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)" }}
-              >
-                <p className="text-sm font-semibold text-white leading-snug">{checkin.target.name}</p>
-                <p className="text-xs text-white/50 mt-0.5">{checkin.challenge.name}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white leading-tight">{checkin.user.name}</p>
+                <p className="text-xs text-white/55">@{checkin.user.username}</p>
               </div>
+              <span className="text-xs text-white/45 shrink-0">{timeAgo(checkin.submitted_at)}</span>
+            </div>
+
+            {/* Photo carousel */}
+            <PhotoCarousel photos={checkin.photos} fallbackUrl={checkin.photo_url} />
+
+            {/* Location */}
+            <div className="px-3 py-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <p className="text-sm font-semibold text-white leading-snug">{checkin.target.name}</p>
+              <p className="text-xs text-white/50 mt-0.5">{checkin.challenge.name}</p>
             </div>
 
             {/* Meta + actions */}
