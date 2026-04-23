@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useRef, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { submitCheckIn } from "@/app/actions/checkin";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,8 +11,7 @@ type Motorcycle = { id: string; brand: string; model: string; year: number; is_a
 type Props = { challengeId: string; targetId: string; motorcycles: Motorcycle[] };
 
 export default function CheckInForm({ challengeId, targetId, motorcycles }: Props) {
-  const [state, setState] = useState<{ error?: string } | undefined>(undefined);
-  const [isPending, startTransition] = useTransition();
+  const [state, formAction, isPending] = useActionState(submitCheckIn, undefined);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -48,11 +47,7 @@ export default function CheckInForm({ challengeId, targetId, motorcycles }: Prop
     const motoSelect = e.currentTarget.querySelector<HTMLSelectElement>('[name="motorcycle_id"]');
     if (motoSelect?.value) fd.set("motorcycle_id", motoSelect.value);
     files.forEach((f) => fd.append("photos", f));
-
-    startTransition(async () => {
-      const result = await submitCheckIn(undefined, fd);
-      if (result) setState(result);
-    });
+    formAction(fd);
   };
 
   return (
