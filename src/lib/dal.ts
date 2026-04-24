@@ -26,6 +26,12 @@ export const verifyModerator = cache(async () => {
   return session;
 });
 
+export const verifyAdmin = cache(async () => {
+  const session = await verifySession();
+  if (session.role !== "ADMIN") redirect("/home");
+  return session;
+});
+
 export const verifyCanModerate = cache(async () => {
   const session = await verifySession();
   const isGlobalModerator = session.role === "MODERATOR" || session.role === "ADMIN";

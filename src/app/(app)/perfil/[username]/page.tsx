@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, ShieldCheck } from "lucide-react";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { logout } from "@/app/actions/auth";
@@ -97,6 +97,15 @@ export default async function PerfilPage({ params }: Props) {
         {/* Owner actions */}
         {isOwner && (
           <div className="absolute top-3 right-3 flex gap-1 z-10">
+            {session.role === "ADMIN" && (
+              <Link
+                href="/admin"
+                className="w-9 h-9 flex items-center justify-center rounded-full transition-colors text-purple-400/80 hover:text-purple-300"
+                style={{ background: "rgba(0,0,0,0.35)" }}
+              >
+                <ShieldCheck className="size-4" />
+              </Link>
+            )}
             <Link
               href="/perfil/editar"
               className="w-9 h-9 flex items-center justify-center rounded-full transition-colors text-white/60 hover:text-white"
