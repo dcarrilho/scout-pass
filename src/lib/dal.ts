@@ -13,6 +13,16 @@ export const verifySession = cache(async () => {
     redirect("/login");
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { is_blocked: true },
+  });
+
+  if (user?.is_blocked) {
+    (await cookies()).delete("session");
+    redirect("/login");
+  }
+
   return { isAuth: true, userId: session.userId, role: session.role };
 });
 

@@ -17,6 +17,19 @@ export async function updateUserRole(userId: string, role: string) {
   revalidatePath("/admin/usuarios");
 }
 
+export async function toggleUserBlocked(userId: string, isBlocked: boolean) {
+  const session = await verifyAdmin();
+
+  if (userId === session.userId) return;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { is_blocked: isBlocked },
+  });
+
+  revalidatePath("/admin/usuarios");
+}
+
 export async function toggleChallengeActive(challengeId: string, isActive: boolean) {
   await verifyAdmin();
 

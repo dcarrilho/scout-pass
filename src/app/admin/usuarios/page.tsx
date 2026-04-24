@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { verifyAdmin } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
+import { toggleUserBlocked } from "@/app/actions/admin";
 import RoleSelector from "@/components/admin/role-selector";
 
 type Props = { searchParams: Promise<{ q?: string }> };
@@ -25,6 +26,7 @@ export default async function AdminUsuariosPage({ searchParams }: Props) {
       email: true,
       avatar_url: true,
       role: true,
+      is_blocked: true,
       created_at: true,
       _count: { select: { checkins: true } },
     },
@@ -82,6 +84,21 @@ export default async function AdminUsuariosPage({ searchParams }: Props) {
               currentRole={user.role}
               isSelf={user.id === session.userId}
             />
+            {user.id !== session.userId && (
+              <form action={toggleUserBlocked.bind(null, user.id, !user.is_blocked)}>
+                <button
+                  type="submit"
+                  className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold"
+                  style={
+                    user.is_blocked
+                      ? { background: "rgba(22,163,74,0.1)", color: "#16a34a", border: "1px solid rgba(22,163,74,0.25)" }
+                      : { background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)" }
+                  }
+                >
+                  {user.is_blocked ? "Desbloquear" : "Bloquear"}
+                </button>
+              </form>
+            )}
           </div>
         ))}
 

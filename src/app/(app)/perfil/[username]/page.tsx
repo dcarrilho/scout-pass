@@ -28,6 +28,8 @@ export default async function PerfilPage({ params }: Props) {
 
   const isOwner = session.userId === user.id;
 
+  if (user.is_blocked && !isOwner && session.role !== "ADMIN") notFound();
+
   const [followerCount, followingCount, checkInCount, medals, recentCheckIns, currentFollow] =
     await Promise.all([
       prisma.follow.count({ where: { following_id: user.id, status: "ACCEPTED" } }),

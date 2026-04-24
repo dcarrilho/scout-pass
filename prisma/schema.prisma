@@ -65,6 +65,7 @@ model User {
   avatar_url        String?
   cover_url         String?
   is_private        Boolean        @default(false)
+  is_blocked        Boolean        @default(false)
   role              Role           @default(USER)
   motorcycles       Motorcycle[]
   checkins          CheckIn[]      @relation("UserCheckIns")

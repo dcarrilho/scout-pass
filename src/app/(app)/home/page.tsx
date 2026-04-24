@@ -18,6 +18,7 @@ export default async function HomePage({
   const rows = await prisma.checkIn.findMany({
     where: {
       status: "APPROVED",
+      user: { is_blocked: false },
       OR: [
         { user: { is_private: false } },
         { user_id: session.userId },

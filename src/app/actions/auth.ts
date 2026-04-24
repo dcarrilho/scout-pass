@@ -63,6 +63,10 @@ export async function login(state: LoginFormState, formData: FormData): Promise<
     return { message: "E-mail ou senha incorretos." };
   }
 
+  if (user.is_blocked) {
+    return { message: "Sua conta foi suspensa. Entre em contato com o suporte." };
+  }
+
   await createSession(user.id, user.role);
   redirect("/home");
 }
